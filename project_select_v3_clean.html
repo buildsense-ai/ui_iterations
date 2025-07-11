@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目选择 - 工程AI助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 主题变量 */
+        :root {
+            --primary-color: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --secondary-color: #a78bfa;
+            --accent-color: #06b6d4;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+            
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f5f5f5;
+            --bg-hover: #f0f0f0;
+            --bg-active: #e8f0fe;
+            
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --text-inverse: #ffffff;
+            
+            --border-color: #e0e0e0;
+            --border-light: #f0f0f0;
+            --border-focus: #1a73e8;
+            
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.15);
+            
+            --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            --gradient-card: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* 头部 */
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-light);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-inverse);
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .settings-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 6px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* 主要内容 */
+        .main-content {
+            padding: 32px 0;
+        }
+        
+        .page-header {
+            margin-bottom: 32px;
+        }
+        
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .title-group {
+            flex: 1;
+        }
+        
+        .title {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .subtitle {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .search-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 16px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .search-toggle:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .search-toggle.active {
+            background: var(--bg-active);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .new-project-btn {
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+            padding: 6px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .new-project-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .search-bar {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            margin-bottom: 0;
+        }
+        
+        .search-bar.show {
+            max-height: 60px;
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: border-color 0.2s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+        }
+        
+        /* 项目网格 */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        
+        .project-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .project-card:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+        }
+        
+        .project-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .project-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-inverse);
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .project-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .project-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .project-type {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        
+        .project-desc {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .project-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        
+        .indicator-active {
+            background: var(--success-color);
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+        
+        .indicator-pending {
+            background: var(--warning-color);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+        
+        .indicator-completed {
+            background: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+        
+        .project-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-light);
+        }
+        
+        .meta-stats {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .meta-item {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+        
+        .meta-value {
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        
+        .project-time {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .empty-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .empty-desc {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+            
+            .header-row {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .title {
+                font-size: 24px;
+            }
+        }
+        
+        /* 动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .project-card {
+            animation: fadeIn 0.4s ease-out;
+        }
+        
+        .project-card:nth-child(1) { animation-delay: 0.05s; }
+        .project-card:nth-child(2) { animation-delay: 0.1s; }
+        .project-card:nth-child(3) { animation-delay: 0.15s; }
+        .project-card:nth-child(4) { animation-delay: 0.2s; }
+        .project-card:nth-child(5) { animation-delay: 0.25s; }
+        .project-card:nth-child(6) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">🏗️ 工程AI助手</div>
+                <div class="user-section">
+                    <div class="user-avatar">张</div>
+                    <button class="settings-btn">⚙️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="main-content">
+            <div class="page-header">
+                <div class="header-row">
+                    <div class="title-group">
+                        <h1 class="title">项目</h1>
+                        <p class="subtitle">选择一个项目开始工作</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="search-toggle" id="searchToggle">
+                            <span>🔍</span>
+                            <span>搜索</span>
+                        </button>
+                        <button class="new-project-btn">
+                            <span>➕</span>
+                            <span>新建</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="search-bar" id="searchBar">
+                    <input type="text" class="search-input" placeholder="搜索项目..." id="searchInput">
+                </div>
+            </div>
+            
+            <div class="projects-grid">
+                <div class="project-card" onclick="selectProject('project1')">
+                    <div class="project-header">
+                        <div class="project-icon">🏗️</div>
+                        <div class="project-info">
+                            <div class="project-title">某市政工程项目</div>
+                            <div class="project-type">市政工程</div>
+                            <div class="project-desc">城市主干道改造工程，包括道路拓宽、桥梁加固和配套设施建设</div>
+                        </div>
+                        <div class="project-indicator indicator-active"></div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="meta-stats">
+                            <div class="meta-item">
+                                <span class="meta-value">156</span> 文件
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-value">23</span> 对话
+                            </div>
+                        </div>
+                        <div class="project-time">2小时前</div>
+                    </div>
+                </div>
+                
+                <div class="project-card" onclick="selectProject('project2')">
+                    <div class="project-header">
+                        <div class="project-icon">🏢</div>
+                        <div class="project-info">
+                            <div class="project-title">CBD商业综合体</div>
+                            <div class="project-type">建筑工程</div>
+                            <div class="project-desc">集商业、办公、娱乐于一体的大型商业综合体项目</div>
+                        </div>
+                        <div class="project-indicator indicator-active"></div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="meta-stats">
+                            <div class="meta-item">
+                                <span class="meta-value">89</span> 文件
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-value">8</span> 对话
+                            </div>
+                        </div>
+                        <div class="project-time">5小时前</div>
+                    </div>
+                </div>
+                
+                <div class="project-card" onclick="selectProject('project3')">
+                    <div class="project-header">
+                        <div class="project-icon">🌉</div>
+                        <div class="project-info">
+                            <div class="project-title">滨江大桥建设</div>
+                            <div class="project-type">交通工程</div>
+                            <div class="project-desc">跨江大桥建设项目，双向六车道，全长2.8公里</div>
+                        </div>
+                        <div class="project-indicator indicator-active"></div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="meta-stats">
+                            <div class="meta-item">
+                                <span class="meta-value">234</span> 文件
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-value">45</span> 对话
+                            </div>
+                        </div>
+                        <div class="project-time">1天前</div>
+                    </div>
+                </div>
+                
+                <div class="project-card" onclick="selectProject('project4')">
+                    <div class="project-header">
+                        <div class="project-icon">🏭</div>
+                        <div class="project-info">
+                            <div class="project-title">工业园区一期</div>
+                            <div class="project-type">工业建筑</div>
+                            <div class="project-desc">现代化工业园区建设，包括厂房、办公楼和配套设施</div>
+                        </div>
+                        <div class="project-indicator indicator-pending"></div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="meta-stats">
+                            <div class="meta-item">
+                                <span class="meta-value">67</span> 文件
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-value">12</span> 对话
+                            </div>
+                        </div>
+                        <div class="project-time">3天前</div>
+                    </div>
+                </div>
+                
+                <div class="project-card" onclick="selectProject('project5')">
+                    <div class="project-header">
+                        <div class="project-icon">🏠</div>
+                        <div class="project-info">
+                            <div class="project-title">安居小区三期</div>
+                            <div class="project-type">住宅建筑</div>
+                            <div class="project-desc">经济适用房建设项目，包含住宅楼和配套商业设施</div>
+                        </div>
+                        <div class="project-indicator indicator-completed"></div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="meta-stats">
+                            <div class="meta-item">
+                                <span class="meta-value">145</span> 文件
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-value">31</span> 对话
+                            </div>
+                        </div>
+                        <div class="project-time">1周前</div>
+                    </div>
+                </div>
+                
+                <div class="project-card" onclick="selectProject('project6')">
+                    <div class="project-header">
+                        <div class="project-icon">💧</div>
+                        <div class="project-info">
+                            <div class="project-title">城市供水管网改造</div>
+                            <div class="project-type">水利工程</div>
+                            <div class="project-desc">老城区供水管网升级改造，提升供水质量和安全</div>
+                        </div>
+                        <div class="project-indicator indicator-pending"></div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="meta-stats">
+                            <div class="meta-item">
+                                <span class="meta-value">78</span> 文件
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-value">2</span> 对话
+                            </div>
+                        </div>
+                        <div class="project-time">2周前</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function selectProject(projectId) {
+            console.log('选择项目:', projectId);
+            alert(`已选择项目: ${projectId}\n即将跳转到对话页面...`);
+            // window.location.href = `frontend_v1_purple.html?project=${projectId}`;
+        }
+        
+        // 搜索切换
+        document.getElementById('searchToggle').addEventListener('click', function() {
+            const searchBar = document.getElementById('searchBar');
+            const searchInput = document.getElementById('searchInput');
+            const toggle = this;
+            
+            if (searchBar.classList.contains('show')) {
+                searchBar.classList.remove('show');
+                toggle.classList.remove('active');
+            } else {
+                searchBar.classList.add('show');
+                toggle.classList.add('active');
+                setTimeout(() => searchInput.focus(), 100);
+            }
+        });
+        
+        // 搜索功能
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.project-card');
+            
+            cards.forEach(card => {
+                const title = card.querySelector('.project-title').textContent.toLowerCase();
+                const type = card.querySelector('.project-type').textContent.toLowerCase();
+                const desc = card.querySelector('.project-desc').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || type.includes(searchTerm) || desc.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+        
+        // 点击外部关闭搜索
+        document.addEventListener('click', function(e) {
+            const searchBar = document.getElementById('searchBar');
+            const searchToggle = document.getElementById('searchToggle');
+            
+            if (!searchBar.contains(e.target) && !searchToggle.contains(e.target)) {
+                searchBar.classList.remove('show');
+                searchToggle.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html> 
