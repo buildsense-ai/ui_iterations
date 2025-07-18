@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程AI助手 - Tabs Workspace</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 主题变量 */
+        :root {
+            --primary-color: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --primary-light: #f3f4f6;
+            --secondary-color: #a78bfa;
+            --accent-color: #06b6d4;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f5f5f5;
+            --bg-hover: #f0f0f0;
+            --bg-active: #e8f0fe;
+            
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --text-inverse: #ffffff;
+            
+            --border-color: #e0e0e0;
+            --border-light: #f0f0f0;
+            --border-focus: #1a73e8;
+            
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+            
+            --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            --gradient-secondary: linear-gradient(135deg, #f3f4f6 0%, #faf5ff 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        /* 顶部应用栏 */
+        .app-header {
+            height: 60px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            justify-content: space-between;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .project-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .project-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .project-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header-btn {
+            padding: 8px 16px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .header-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .header-btn.primary {
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+        }
+        
+        /* 标签页容器 */
+        .tabs-container {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            min-height: 48px;
+            overflow-x: auto;
+            padding: 0 12px;
+        }
+        
+        .tabs-nav {
+            display: flex;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .tab-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: none;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            white-space: nowrap;
+            position: relative;
+            min-width: 0;
+            max-width: 200px;
+        }
+        
+        .tab-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .tab-item.active {
+            background: var(--bg-secondary);
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .tab-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .tab-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .tab-close {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: none;
+            border: none;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .tab-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .tab-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 12px;
+            border-left: 1px solid var(--border-color);
+            padding-left: 12px;
+        }
+        
+        .new-tab-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .new-tab-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* 工作区内容 */
+        .workspace-content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .workspace-panel {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+            flex-direction: column;
+        }
+        
+        .workspace-panel.active {
+            display: flex;
+        }
+        
+        /* AI对话工作区 */
+        .chat-workspace {
+            display: flex;
+            height: 100%;
+        }
+        
+        .chat-sidebar {
+            width: 300px;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .sidebar-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .chat-sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .file-group {
+            margin-bottom: 24px;
+        }
+        
+        .file-group-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .file-item:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-color);
+        }
+        
+        .file-item.active {
+            background: var(--bg-active);
+            border-color: var(--primary-color);
+        }
+        
+        .file-icon {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .file-name {
+            flex: 1;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+        
+        .file-action {
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        
+        .file-item:hover .file-action {
+            opacity: 1;
+        }
+        
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+        
+        .chat-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-title {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .chat-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
+        
+        .welcome-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+        }
+        
+        .welcome-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+        
+        .welcome-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .welcome-btn {
+            padding: 10px 20px;
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .welcome-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .chat-input-area {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: end;
+        }
+        
+        .input-field {
+            flex: 1;
+            min-height: 40px;
+            max-height: 120px;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+        
+        .input-field:focus {
+            border-color: var(--border-focus);
+        }
+        
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .send-btn:hover {
+            background: var(--primary-hover);
+        }
+        
+        /* PDF查看器工作区 */
+        .pdf-workspace {
+            background: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .pdf-toolbar {
+            height: 50px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 16px;
+        }
+        
+        .pdf-nav-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .pdf-btn {
+            padding: 6px 12px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .pdf-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .pdf-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .page-input {
+            width: 60px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            text-align: center;
+            font-size: 13px;
+        }
+        
+        .pdf-content {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .pdf-viewer {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            min-height: 600px;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .pdf-placeholder-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+        }
+        
+        .pdf-placeholder-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .pdf-placeholder-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        /* 文档编辑器工作区 */
+        .editor-workspace {
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            border-right: 1px solid var(--border-color);
+            padding-right: 16px;
+        }
+        
+        .toolbar-group:last-child {
+            border-right: none;
+            padding-right: 0;
+        }
+        
+        .toolbar-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .toolbar-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .toolbar-btn.active {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+        }
+        
+        .toolbar-select {
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            background: white;
+        }
+        
+        .editor-area {
+            min-height: 100%;
+            padding: 40px 80px;
+            outline: none;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .editor-area h1, .editor-area h2, .editor-area h3 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        
+        .editor-area h1 {
+            font-size: 28px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        .editor-area h2 {
+            font-size: 22px;
+        }
+        
+        .editor-area h3 {
+            font-size: 18px;
+        }
+        
+        .editor-area p {
+            margin-bottom: 16px;
+        }
+        
+        .editor-area ul, .editor-area ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+        
+        .editor-area li {
+            margin-bottom: 4px;
+        }
+        
+        .editor-area table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        
+        .editor-area th, .editor-area td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .editor-area th {
+            background: var(--bg-secondary);
+            font-weight: 500;
+        }
+        
+        /* 新建标签页菜单 */
+        .new-tab-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            min-width: 200px;
+            display: none;
+        }
+        
+        .new-tab-menu.show {
+            display: block;
+        }
+        
+        .menu-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .menu-item:hover {
+            background: var(--bg-hover);
+        }
+        
+        .menu-item:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .menu-item:last-child {
+            border-radius: 0 0 6px 6px;
+        }
+        
+        .menu-icon {
+            font-size: 16px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .chat-sidebar {
+                width: 250px;
+            }
+            
+            .editor-area {
+                padding: 20px;
+            }
+            
+            .tabs-nav {
+                overflow-x: auto;
+            }
+            
+            .tab-item {
+                min-width: 120px;
+            }
+        }
+        
+        /* 动画效果 */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .workspace-panel {
+            animation: slideIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部应用栏 -->
+        <div class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <span>🏗️</span>
+                    <span>工程AI助手</span>
+                </div>
+                <div class="project-info">
+                    <div class="project-name">某市政工程项目</div>
+                    <div class="project-desc">道路改造 • 2.5公里 • 进行中</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" onclick="showSettings()">
+                    <span>⚙️</span>
+                    <span>设置</span>
+                </button>
+                <button class="header-btn" onclick="showHelp()">
+                    <span>❓</span>
+                    <span>帮助</span>
+                </button>
+                <button class="header-btn primary" onclick="exportWorkspace()">
+                    <span>📤</span>
+                    <span>导出</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 标签页容器 -->
+        <div class="tabs-container">
+            <div class="tabs-nav" id="tabsNav">
+                <button class="tab-item active" data-tab="chat" onclick="switchTab('chat')">
+                    <span class="tab-icon">💬</span>
+                    <span class="tab-title">AI对话</span>
+                </button>
+            </div>
+            <div class="tab-actions">
+                <button class="new-tab-btn" onclick="toggleNewTabMenu()" id="newTabBtn">➕</button>
+                <div class="new-tab-menu" id="newTabMenu">
+                    <div class="menu-item" onclick="createNewTab('pdf', '查看PDF')">
+                        <span class="menu-icon">📄</span>
+                        <span>PDF查看器</span>
+                    </div>
+                    <div class="menu-item" onclick="createNewTab('editor', '新文档')">
+                        <span class="menu-icon">📝</span>
+                        <span>文档编辑器</span>
+                    </div>
+                    <div class="menu-item" onclick="createNewTab('chat', 'AI对话')">
+                        <span class="menu-icon">🤖</span>
+                        <span>新对话</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 工作区内容 -->
+        <div class="workspace-content">
+            <!-- AI对话工作区 -->
+            <div class="workspace-panel active" id="workspace-chat">
+                <div class="chat-workspace">
+                    <div class="chat-sidebar">
+                        <div class="chat-sidebar-header">
+                            <div class="sidebar-title">文件浏览器</div>
+                            <div class="sidebar-subtitle">点击文件在新标签页中打开</div>
+                        </div>
+                        <div class="chat-sidebar-content">
+                            <div class="file-group">
+                                <div class="file-group-title">
+                                    <span>📄</span>
+                                    <span>PDF文档</span>
+                                </div>
+                                <div class="file-item" onclick="openInNewTab('pdf', '建筑平面图.pdf')">
+                                    <span class="file-icon">📄</span>
+                                    <span class="file-name">建筑平面图.pdf</span>
+                                    <span class="file-action">打开</span>
+                                </div>
+                                <div class="file-item" onclick="openInNewTab('pdf', '结构施工图.pdf')">
+                                    <span class="file-icon">📄</span>
+                                    <span class="file-name">结构施工图.pdf</span>
+                                    <span class="file-action">打开</span>
+                                </div>
+                                <div class="file-item" onclick="openInNewTab('pdf', '施工规范.pdf')">
+                                    <span class="file-icon">📄</span>
+                                    <span class="file-name">施工规范.pdf</span>
+                                    <span class="file-action">打开</span>
+                                </div>
+                            </div>
+                            
+                            <div class="file-group">
+                                <div class="file-group-title">
+                                    <span>📝</span>
+                                    <span>可编辑文档</span>
+                                </div>
+                                <div class="file-item" onclick="openInNewTab('editor', '施工方案')">
+                                    <span class="file-icon">📝</span>
+                                    <span class="file-name">施工方案.docx</span>
+                                    <span class="file-action">编辑</span>
+                                </div>
+                                <div class="file-item" onclick="openInNewTab('editor', '质量检查报告')">
+                                    <span class="file-icon">📝</span>
+                                    <span class="file-name">质量检查报告.docx</span>
+                                    <span class="file-action">编辑</span>
+                                </div>
+                                <div class="file-item" onclick="openInNewTab('editor', '安全管理制度')">
+                                    <span class="file-icon">📝</span>
+                                    <span class="file-name">安全管理制度.docx</span>
+                                    <span class="file-action">编辑</span>
+                                </div>
+                            </div>
+                            
+                            <div class="file-group">
+                                <div class="file-group-title">
+                                    <span>➕</span>
+                                    <span>快速操作</span>
+                                </div>
+                                <div class="file-item" onclick="createNewTab('editor', '新建文档')">
+                                    <span class="file-icon">✨</span>
+                                    <span class="file-name">新建文档</span>
+                                    <span class="file-action">创建</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-main">
+                        <div class="chat-header">
+                            <div class="chat-title">AI 助手对话</div>
+                            <div class="chat-status">
+                                <span class="status-dot"></span>
+                                <span>在线</span>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-messages">
+                            <div class="welcome-screen">
+                                <div class="welcome-icon">🤖</div>
+                                <div class="welcome-title">欢迎使用工程AI助手</div>
+                                <div class="welcome-subtitle">我可以帮您分析图纸、生成文档、回答技术问题</div>
+                                <div class="welcome-actions">
+                                    <button class="welcome-btn" onclick="startQuickChat('分析图纸')">分析图纸</button>
+                                    <button class="welcome-btn" onclick="startQuickChat('生成文档')">生成文档</button>
+                                    <button class="welcome-btn" onclick="startQuickChat('技术咨询')">技术咨询</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-input-area">
+                            <div class="input-container">
+                                <textarea class="input-field" id="chatInput" placeholder="向AI助手提问..." rows="1"></textarea>
+                                <button class="send-btn" onclick="sendMessage()">▶</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PDF查看器工作区模板 -->
+            <div class="workspace-panel" id="workspace-pdf-template" style="display: none;">
+                <div class="pdf-workspace">
+                    <div class="pdf-toolbar">
+                        <div class="pdf-nav-group">
+                            <button class="pdf-btn" onclick="previousPage()" id="prevBtn">◀ 上一页</button>
+                            <input type="number" class="page-input" id="pageInput" value="1" min="1">
+                            <span>/ <span id="totalPages">10</span></span>
+                            <button class="pdf-btn" onclick="nextPage()" id="nextBtn">下一页 ▶</button>
+                        </div>
+                        <div class="pdf-nav-group">
+                            <button class="pdf-btn" onclick="zoomOut()">🔍-</button>
+                            <button class="pdf-btn" onclick="zoomIn()">🔍+</button>
+                            <button class="pdf-btn" onclick="fitToWidth()">📐 适合宽度</button>
+                        </div>
+                        <div class="pdf-nav-group" style="margin-left: auto;">
+                            <button class="pdf-btn" onclick="downloadPDF()">📥 下载</button>
+                            <button class="pdf-btn" onclick="printPDF()">🖨️ 打印</button>
+                        </div>
+                    </div>
+                    <div class="pdf-content">
+                        <div class="pdf-viewer">
+                            <div class="pdf-placeholder-icon">📄</div>
+                            <div class="pdf-placeholder-title">PDF文档查看器</div>
+                            <div class="pdf-placeholder-desc">文档加载中...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 文档编辑器工作区模板 -->
+            <div class="workspace-panel" id="workspace-editor-template" style="display: none;">
+                <div class="editor-workspace">
+                    <div class="editor-toolbar">
+                        <div class="toolbar-group">
+                            <select class="toolbar-select" onchange="formatText('formatBlock', this.value)">
+                                <option value="div">正文</option>
+                                <option value="h1">标题 1</option>
+                                <option value="h2">标题 2</option>
+                                <option value="h3">标题 3</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('bold')" title="粗体"><b>B</b></button>
+                            <button class="toolbar-btn" onclick="formatText('italic')" title="斜体"><i>I</i></button>
+                            <button class="toolbar-btn" onclick="formatText('underline')" title="下划线"><u>U</u></button>
+                        </div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('insertUnorderedList')" title="项目符号">•</button>
+                            <button class="toolbar-btn" onclick="formatText('insertOrderedList')" title="编号">1.</button>
+                            <button class="toolbar-btn" onclick="insertTable()" title="插入表格">⊞</button>
+                        </div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('justifyLeft')" title="左对齐">⬅</button>
+                            <button class="toolbar-btn" onclick="formatText('justifyCenter')" title="居中">↔</button>
+                            <button class="toolbar-btn" onclick="formatText('justifyRight')" title="右对齐">➡</button>
+                        </div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="saveDocument()" title="保存">💾</button>
+                            <button class="toolbar-btn" onclick="undo()" title="撤销">↶</button>
+                            <button class="toolbar-btn" onclick="redo()" title="重做">↷</button>
+                        </div>
+                    </div>
+                    
+                    <div class="editor-content">
+                        <div class="editor-area" contenteditable="true">
+                            <h1>新建文档</h1>
+                            <p>开始编写您的工程文档...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let tabCounter = 1;
+        let activeTab = 'chat';
+        
+        // 切换标签页
+        function switchTab(tabId) {
+            // 更新标签页状态
+            document.querySelectorAll('.tab-item').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            
+            // 更新工作区显示
+            document.querySelectorAll('.workspace-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.getElementById(`workspace-${tabId}`).classList.add('active');
+            
+            activeTab = tabId;
+        }
+        
+        // 创建新标签页
+        function createNewTab(type, title) {
+            const tabId = `${type}-${++tabCounter}`;
+            
+            // 创建标签页
+            const tabItem = document.createElement('button');
+            tabItem.className = 'tab-item';
+            tabItem.setAttribute('data-tab', tabId);
+            tabItem.onclick = () => switchTab(tabId);
+            
+            const icons = {
+                'pdf': '📄',
+                'editor': '📝',
+                'chat': '💬'
+            };
+            
+            tabItem.innerHTML = `
+                <span class="tab-icon">${icons[type]}</span>
+                <span class="tab-title">${title}</span>
+                <button class="tab-close" onclick="closeTab('${tabId}', event)">×</button>
+            `;
+            
+            // 插入到新建按钮前
+            const tabsNav = document.getElementById('tabsNav');
+            tabsNav.appendChild(tabItem);
+            
+            // 创建工作区面板
+            const template = document.getElementById(`workspace-${type}-template`);
+            const newPanel = template.cloneNode(true);
+            newPanel.id = `workspace-${tabId}`;
+            newPanel.style.display = 'none';
+            
+            // 为编辑器设置唯一ID
+            if (type === 'editor') {
+                const editorArea = newPanel.querySelector('.editor-area');
+                editorArea.id = `editor-${tabId}`;
+            }
+            
+            document.querySelector('.workspace-content').appendChild(newPanel);
+            
+            // 切换到新标签页
+            switchTab(tabId);
+            
+            // 关闭新建菜单
+            document.getElementById('newTabMenu').classList.remove('show');
+            
+            return tabId;
+        }
+        
+        // 关闭标签页
+        function closeTab(tabId, event) {
+            event.stopPropagation();
+            
+            // 不能关闭最后一个标签页
+            const tabs = document.querySelectorAll('.tab-item');
+            if (tabs.length <= 1) {
+                return;
+            }
+            
+            // 移除标签页
+            const tabElement = document.querySelector(`[data-tab="${tabId}"]`);
+            const wasActive = tabElement.classList.contains('active');
+            tabElement.remove();
+            
+            // 移除工作区
+            const workspace = document.getElementById(`workspace-${tabId}`);
+            workspace.remove();
+            
+            // 如果关闭的是当前活跃标签页，切换到第一个标签页
+            if (wasActive) {
+                const firstTab = document.querySelector('.tab-item');
+                if (firstTab) {
+                    const firstTabId = firstTab.getAttribute('data-tab');
+                    switchTab(firstTabId);
+                }
+            }
+        }
+        
+        // 在新标签页中打开文件
+        function openInNewTab(type, filename) {
+            const tabId = createNewTab(type, filename);
+            
+            if (type === 'pdf') {
+                // 加载PDF
+                loadPDFInTab(tabId, filename);
+            } else if (type === 'editor') {
+                // 加载文档
+                loadDocumentInTab(tabId, filename);
+            }
+        }
+        
+        // 在标签页中加载PDF
+        function loadPDFInTab(tabId, filename) {
+            const workspace = document.getElementById(`workspace-${tabId}`);
+            const pdfTitle = workspace.querySelector('.pdf-placeholder-title');
+            const pdfDesc = workspace.querySelector('.pdf-placeholder-desc');
+            
+            pdfTitle.textContent = filename;
+            pdfDesc.textContent = `已加载 ${filename} • 10页`;
+            
+            // 模拟PDF加载
+            setTimeout(() => {
+                const viewer = workspace.querySelector('.pdf-viewer');
+                viewer.innerHTML = `
+                    <div style="width: 100%; height: 100%; background: #f8f9fa; border: 2px dashed #dee2e6; display: flex; align-items: center; justify-content: center; flex-direction: column; border-radius: 8px;">
+                        <div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-color);">📄</div>
+                        <div style="font-size: 18px; font-weight: 500; margin-bottom: 8px;">${filename}</div>
+                        <div style="font-size: 14px; color: var(--text-secondary);">PDF内容显示区域</div>
+                        <div style="margin-top: 16px; font-size: 12px; color: var(--text-tertiary);">使用上方工具栏进行导航和缩放</div>
+                    </div>
+                `;
+            }, 1000);
+        }
+        
+        // 在标签页中加载文档
+        function loadDocumentInTab(tabId, filename) {
+            const workspace = document.getElementById(`workspace-${tabId}`);
+            const editorArea = workspace.querySelector('.editor-area');
+            
+            const templates = {
+                '施工方案': `
+                    <h1>施工方案</h1>
+                    <h2>1. 工程概况</h2>
+                    <p>本工程为某市政道路改造项目，主要包括道路拓宽、桥梁加固和配套设施建设。</p>
+                    <h2>2. 施工准备</h2>
+                    <ul>
+                        <li>材料准备：水泥、钢筋、混凝土等</li>
+                        <li>设备配置：挖掘机、装载机、搅拌车</li>
+                        <li>人员安排：项目经理、工长、技术员</li>
+                    </ul>
+                    <h2>3. 施工工艺</h2>
+                    <ol>
+                        <li>基础开挖与处理</li>
+                        <li>钢筋绑扎</li>
+                        <li>模板安装</li>
+                        <li>混凝土浇筑</li>
+                    </ol>
+                `,
+                '质量检查报告': `
+                    <h1>质量检查报告</h1>
+                    <p><strong>检查日期：</strong> ${new Date().toLocaleDateString()}</p>
+                    <p><strong>检查人员：</strong> 工程师团队</p>
+                    <h2>检查结果</h2>
+                    <table>
+                        <tr>
+                            <th>检查项目</th>
+                            <th>标准要求</th>
+                            <th>实际情况</th>
+                            <th>结果</th>
+                        </tr>
+                        <tr>
+                            <td>混凝土强度</td>
+                            <td>≥C30</td>
+                            <td>C32</td>
+                            <td>✅ 合格</td>
+                        </tr>
+                    </table>
+                `,
+                '安全管理制度': `
+                    <h1>施工现场安全管理制度</h1>
+                    <h2>第一章 总则</h2>
+                    <p>为加强施工现场安全管理，保障施工人员生命安全和身体健康，制定本制度。</p>
+                    <h2>第二章 安全操作规程</h2>
+                    <ul>
+                        <li>高空作业必须系安全带</li>
+                        <li>机械操作人员必须持证上岗</li>
+                        <li>严禁违章作业</li>
+                    </ul>
+                `
+            };
+            
+            editorArea.innerHTML = templates[filename] || `
+                <h1>${filename}</h1>
+                <p>开始编写您的工程文档...</p>
+            `;
+        }
+        
+        // 切换新建标签页菜单
+        function toggleNewTabMenu() {
+            const menu = document.getElementById('newTabMenu');
+            menu.classList.toggle('show');
+        }
+        
+        // 点击外部关闭菜单
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('newTabMenu');
+            const btn = document.getElementById('newTabBtn');
+            
+            if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.classList.remove('show');
+            }
+        });
+        
+        // PDF控制功能
+        function previousPage() {
+            const pageInput = document.querySelector(`#workspace-${activeTab} .page-input`);
+            if (pageInput) {
+                const currentPage = parseInt(pageInput.value);
+                if (currentPage > 1) {
+                    pageInput.value = currentPage - 1;
+                }
+            }
+        }
+        
+        function nextPage() {
+            const pageInput = document.querySelector(`#workspace-${activeTab} .page-input`);
+            const totalPages = document.querySelector(`#workspace-${activeTab} #totalPages`);
+            if (pageInput && totalPages) {
+                const currentPage = parseInt(pageInput.value);
+                const total = parseInt(totalPages.textContent);
+                if (currentPage < total) {
+                    pageInput.value = currentPage + 1;
+                }
+            }
+        }
+        
+        function zoomIn() {
+            console.log('放大PDF');
+        }
+        
+        function zoomOut() {
+            console.log('缩小PDF');
+        }
+        
+        function fitToWidth() {
+            console.log('适合宽度');
+        }
+        
+        function downloadPDF() {
+            console.log('下载PDF');
+        }
+        
+        function printPDF() {
+            console.log('打印PDF');
+        }
+        
+        // 文档编辑功能
+        function formatText(command, value = null) {
+            const editorArea = document.querySelector(`#workspace-${activeTab} .editor-area`);
+            if (editorArea) {
+                document.execCommand(command, false, value);
+                editorArea.focus();
+            }
+        }
+        
+        function insertTable() {
+            const tableHTML = `
+                <table>
+                    <tr>
+                        <th>列1</th>
+                        <th>列2</th>
+                        <th>列3</th>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+            `;
+            document.execCommand('insertHTML', false, tableHTML);
+        }
+        
+        function saveDocument() {
+            const editorArea = document.querySelector(`#workspace-${activeTab} .editor-area`);
+            if (editorArea) {
+                console.log('保存文档:', editorArea.innerHTML);
+                
+                // 显示保存提示
+                const tab = document.querySelector(`[data-tab="${activeTab}"] .tab-title`);
+                const originalTitle = tab.textContent;
+                tab.textContent = '✅ 已保存';
+                
+                setTimeout(() => {
+                    tab.textContent = originalTitle;
+                }, 2000);
+            }
+        }
+        
+        function undo() {
+            document.execCommand('undo', false, null);
+        }
+        
+        function redo() {
+            document.execCommand('redo', false, null);
+        }
+        
+        // AI对话功能
+        function startQuickChat(type) {
+            console.log('开始快速对话:', type);
+            // 这里可以添加AI对话逻辑
+        }
+        
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message) {
+                console.log('发送消息:', message);
+                input.value = '';
+                // 这里可以添加AI对话逻辑
+            }
+        }
+        
+        // 回车发送消息
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // 其他功能
+        function showSettings() {
+            alert('设置功能开发中...');
+        }
+        
+        function showHelp() {
+            alert('帮助功能开发中...');
+        }
+        
+        function exportWorkspace() {
+            alert('导出功能开发中...');
+        }
+    </script>
+</body>
+</html> 

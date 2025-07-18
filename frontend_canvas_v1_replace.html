@@ -1,0 +1,3138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程AI助手 - Canvas版本1 (替换模式)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 主题变量 */
+        :root {
+            /* 亮色模式 - 优雅紫色 */
+            --primary-color: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --primary-light: #f3f4f6;
+            --secondary-color: #a78bfa;
+            --accent-color: #06b6d4;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f5f5f5;
+            --bg-hover: #f0f0f0;
+            --bg-active: #e8f0fe;
+            
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --text-inverse: #ffffff;
+            
+            --border-color: #e0e0e0;
+            --border-light: #f0f0f0;
+            --border-focus: #1a73e8;
+            
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+            
+            --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            --gradient-secondary: linear-gradient(135deg, #f3f4f6 0%, #faf5ff 100%);
+        }
+        
+        /* 深色模式 */
+        [data-theme="dark"] {
+            --primary-color: #a78bfa;
+            --primary-hover: #c4b5fd;
+            --primary-light: #2d1b69;
+            --secondary-color: #c4b5fd;
+            --accent-color: #67e8f9;
+            --warning-color: #fbbf24;
+            --error-color: #f87171;
+            
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #363636;
+            --bg-hover: #404040;
+            --bg-active: #1a2332;
+            
+            --text-primary: #ffffff;
+            --text-secondary: #e0e0e0;
+            --text-tertiary: #b0b0b0;
+            --text-inverse: #1a1a1a;
+            
+            --border-color: #404040;
+            --border-light: #2d2d2d;
+            --border-focus: #4285f4;
+            
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.3);
+            
+            --gradient-primary: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%);
+            --gradient-secondary: linear-gradient(135deg, #2d1b69 0%, #2d2d2d 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .sidebar {
+            width: 350px;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            margin-left: -330px;
+        }
+        
+        /* 标签页样式 */
+        .sidebar-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .sidebar-tab {
+            flex: 1;
+            padding: 12px 16px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .sidebar-tab.active {
+            color: var(--primary-color);
+            background: var(--bg-primary);
+            font-weight: 500;
+        }
+        
+        .sidebar-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-color);
+        }
+        
+        .sidebar-tab:hover:not(.active) {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #historyTab .chat-history {
+            flex: 1;
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #historyTab .history-list {
+            flex: 1;
+            max-height: none;
+        }
+        
+        /* 设置面板样式 */
+        .settings-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .settings-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .settings-panel {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 32px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            animation: settingsSlideIn 0.3s ease;
+        }
+        
+        @keyframes settingsSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .settings-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .settings-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-close:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .settings-section {
+            margin-bottom: 24px;
+        }
+        
+        .settings-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+        
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+        
+        .settings-item-label {
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        
+        .settings-item-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        .settings-item-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .theme-toggle {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .theme-option {
+            padding: 8px 12px;
+            border: none;
+            background: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+        
+        .theme-option.active {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .settings-input {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+        
+        .settings-input:focus {
+            outline: none;
+            border-color: var(--border-focus);
+        }
+        
+        .settings-btn {
+            padding: 8px 16px;
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .settings-btn.secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .settings-btn.secondary:hover {
+            background: var(--bg-hover);
+        }
+        
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--text-inverse);
+            margin-right: 16px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .user-info {
+            flex: 1;
+        }
+        
+        .user-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .user-role {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        
+        .settings-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        /* 动画样式 */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .project-name {
+            font-size: 14px;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* 新建对话按钮 */
+        .new-chat-btn {
+            margin: 16px 20px;
+            padding: 12px 16px;
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .new-chat-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .new-chat-btn:active {
+            transform: translateY(0);
+        }
+        
+        .file-tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .folder {
+            margin-bottom: 12px;
+        }
+        
+        .folder-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .folder-title:hover {
+            background: var(--bg-hover);
+        }
+        
+        .folder-icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .file-list {
+            margin-left: 24px;
+            margin-top: 8px;
+        }
+        
+        .file-item {
+            padding: 6px 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+        
+        .file-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .upload-zone {
+            margin: 20px;
+            padding: 20px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            color: var(--text-secondary);
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            position: relative;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            z-index: 1000;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+        
+        .sidebar-toggle:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* 主内容区域头部 */
+        .main-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-primary);
+        }
+        
+        .main-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        /* 视图切换按钮 */
+        .view-toggle {
+            display: flex;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .view-btn {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .view-btn.active {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .view-btn:hover:not(.active) {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* 内容区域 */
+        .content-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* 对话视图 */
+        .chat-view {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            width: 100%;
+            background: var(--bg-primary);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .chat-view.hidden {
+            opacity: 0;
+            transform: translateX(-100%);
+            pointer-events: none;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4caf50;
+        }
+        
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .welcome-prompts {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
+        
+        .welcome-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        
+        .prompt-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .prompt-option {
+            padding: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .prompt-option:hover {
+            background: var(--bg-active);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .prompt-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .prompt-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .prompt-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            max-width: 85%;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            animation: messageSlideIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+        
+        @keyframes messageSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            60% {
+                opacity: 0.8;
+                transform: translateY(-2px) scale(1.01);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .message.user {
+            flex-direction: row-reverse;
+            margin-left: auto;
+        }
+        
+        .message-content {
+            padding: 14px 18px;
+            border-radius: 20px;
+            background: var(--bg-secondary);
+            backdrop-filter: blur(10px);
+            color: var(--text-primary);
+            line-height: 1.6;
+            font-size: 14px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+        }
+        
+        .message-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .message-content:hover::before {
+            opacity: 1;
+        }
+        
+        .message-content:hover {
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+        
+        .message.user .message-content {
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: 1px solid var(--border-color);
+        }
+        
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--gradient-secondary);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+            color: white;
+        }
+        
+        .message-avatar:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+        
+        /* AI思考过程展示 */
+        .thinking-process {
+            margin-bottom: 16px;
+            max-width: 80%;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-secondary);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .thinking-process.collapsed {
+            max-height: 40px;
+            overflow: hidden;
+        }
+        
+        .thinking-header {
+            padding: 12px 16px;
+            background: var(--bg-active);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .thinking-header:hover {
+            background: var(--bg-hover);
+        }
+        
+        .thinking-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .thinking-icon {
+            animation: rotate 2s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .thinking-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .thinking-toggle {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        
+        .thinking-toggle.expanded {
+            transform: rotate(180deg);
+        }
+        
+        .thinking-content {
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .thinking-step {
+            margin-bottom: 12px;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+            opacity: 0;
+            transform: translateX(-20px) scale(0.95);
+            animation: stepSlideIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .thinking-step::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: width 0.4s ease;
+        }
+        
+        .thinking-step.completed {
+            border-left-color: var(--accent-color);
+            background: var(--bg-secondary);
+        }
+        
+        .thinking-step.completed::before {
+            background: linear-gradient(to bottom, var(--accent-color), var(--secondary-color));
+            width: 100%;
+            opacity: 0.1;
+        }
+        
+        .thinking-step.current {
+            border-left-color: var(--warning-color);
+            background: var(--bg-active);
+            box-shadow: var(--shadow-md);
+            animation: stepGlow 2s ease-in-out infinite alternate;
+        }
+        
+        .thinking-step.current::before {
+            background: linear-gradient(to bottom, var(--warning-color), var(--accent-color));
+            animation: progressPulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes stepSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-20px) scale(0.95);
+            }
+            70% {
+                opacity: 0.8;
+                transform: translateX(2px) scale(1.02);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+        
+        @keyframes stepGlow {
+            from {
+                box-shadow: 0 4px 16px rgba(255,152,0,0.2);
+            }
+            to {
+                box-shadow: 0 6px 24px rgba(255,152,0,0.4);
+            }
+        }
+        
+        @keyframes progressPulse {
+            0%, 100% {
+                width: 4px;
+                opacity: 1;
+            }
+            50% {
+                width: 8px;
+                opacity: 0.7;
+            }
+        }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .step-icon {
+            font-size: 14px;
+        }
+        
+        .step-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .step-time {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-left: auto;
+        }
+        
+        .step-content {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-left: 22px;
+        }
+        
+        .thinking-progress {
+            margin-top: 16px;
+            height: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .thinking-progress::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        .thinking-progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            width: 0%;
+            transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .thinking-progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: progressShine 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        
+        @keyframes progressShine {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        
+        .references {
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .reference-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .reference-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .reference-link:hover {
+            text-decoration: underline;
+        }
+        
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: end;
+        }
+        
+        .input-field {
+            flex: 1;
+            min-height: 40px;
+            max-height: 120px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: border-color 0.2s ease;
+        }
+        
+        .input-field:focus {
+            border-color: var(--border-focus);
+        }
+        
+        .input-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .attach-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .attach-btn:hover {
+            border-color: var(--border-focus);
+            background: var(--bg-active);
+            color: var(--text-primary);
+        }
+        
+        .send-button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .send-button:hover {
+            background: var(--primary-hover);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .chat-messages {
+            display: none;
+        }
+        
+        .chat-messages.show {
+            display: block;
+        }
+        
+        .current-files {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            display: none;
+        }
+        
+        .current-files.show {
+            display: block;
+        }
+        
+        .current-files-title {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .current-file-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            background: white;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .file-action {
+            padding: 2px 6px;
+            background: var(--bg-active);
+            color: var(--primary-color);
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: background 0.2s;
+        }
+        
+        .file-action:hover {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+        }
+        
+        /* 对话历史样式 */
+        .chat-history {
+            margin-bottom: 16px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e8f0fe;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .sidebar.collapsed .chat-history {
+            display: none;
+        }
+        
+        .history-title {
+            font-weight: 500;
+            padding: 12px 16px;
+            background: var(--bg-active);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .history-title-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .history-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .history-action-btn {
+            background: var(--bg-hover);
+            border: none;
+            color: var(--primary-color);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .history-action-btn:hover {
+            background: var(--bg-active);
+        }
+        
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #fafafa;
+        }
+        
+        .history-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+        
+        .history-item:hover {
+            background: #f0f8ff;
+            transform: translateX(4px);
+            box-shadow: 0 2px 8px rgba(26,115,232,0.1);
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .history-item.active {
+            background: var(--bg-active);
+            border-left: 3px solid var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .history-item.pinned {
+            background: var(--bg-secondary);
+            border-left: 3px solid var(--warning-color);
+        }
+        
+        .history-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .history-badges {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        
+        .history-badge.current {
+            background: var(--primary-color);
+        }
+        
+        .history-badge.pinned {
+            background: var(--warning-color);
+        }
+        
+        .history-menu {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .history-item:hover .history-menu {
+            opacity: 1;
+        }
+        
+        .history-menu-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .history-menu-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .history-dropdown {
+            position: absolute;
+            right: 16px;
+            top: 100%;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            min-width: 120px;
+            display: none;
+        }
+        
+        .history-dropdown.show {
+            display: block;
+        }
+        
+        .dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-primary);
+            transition: background 0.2s;
+        }
+        
+        .dropdown-item:hover {
+            background: var(--bg-hover);
+        }
+        
+        .dropdown-item.danger {
+            color: var(--error-color);
+        }
+        
+        .dropdown-item.danger:hover {
+            background: var(--bg-hover);
+        }
+        
+        .history-time {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .history-preview {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .history-badge {
+            display: inline-block;
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+        
+        /* ==================== Canvas 样式 ==================== */
+        
+        /* Canvas视图 */
+        .canvas-view {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: absolute;
+            width: 100%;
+            background: var(--bg-primary);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .canvas-view.hidden {
+            opacity: 0;
+            transform: translateX(100%);
+            pointer-events: none;
+        }
+        
+        /* Canvas工具栏 */
+        .canvas-toolbar {
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        
+        .canvas-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .canvas-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .canvas-type {
+            padding: 4px 8px;
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .canvas-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .canvas-btn {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .canvas-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--primary-color);
+        }
+        
+        .canvas-btn.primary {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            border-color: var(--primary-color);
+        }
+        
+        .canvas-btn.primary:hover {
+            background: var(--primary-hover);
+        }
+        
+        /* Canvas内容区域 */
+        .canvas-content {
+            flex: 1;
+            position: relative;
+            background: var(--bg-tertiary);
+            overflow: hidden;
+        }
+        
+        /* PDF查看器 */
+        .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #f5f5f5;
+        }
+        
+        .pdf-controls {
+            padding: 12px 20px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .pdf-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .pdf-nav-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .pdf-nav-btn:hover {
+            background: var(--bg-hover);
+        }
+        
+        .pdf-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pdf-page-info {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .pdf-zoom {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .pdf-zoom-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .pdf-zoom-btn:hover {
+            background: var(--bg-hover);
+        }
+        
+        .pdf-zoom-level {
+            font-size: 14px;
+            color: var(--text-primary);
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .pdf-display {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .pdf-page {
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            max-width: 100%;
+            height: auto;
+        }
+        
+        /* 文档编辑器 */
+        .document-editor {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+        
+        .editor-toolbar {
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .editor-btn-group {
+            display: flex;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .editor-btn {
+            padding: 8px 12px;
+            border: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        .editor-btn:last-child {
+            border-right: none;
+        }
+        
+        .editor-btn:hover {
+            background: var(--bg-hover);
+        }
+        
+        .editor-btn.active {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+        }
+        
+        .editor-content {
+            flex: 1;
+            padding: 20px;
+            background: white;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .editor-textarea {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            resize: none;
+            background: transparent;
+        }
+        
+        /* AI协作提示 */
+        .ai-collaboration {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: var(--shadow-md);
+            animation: aiPulse 2s ease-in-out infinite;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        @keyframes aiPulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 4px 8px rgba(139,92,246,0.3);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 6px 20px rgba(139,92,246,0.4);
+            }
+        }
+        
+        .ai-collaboration:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(139,92,246,0.5);
+        }
+        
+        /* 空白状态 */
+        .canvas-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        .canvas-empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        .canvas-empty-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        
+        .canvas-empty-desc {
+            font-size: 14px;
+            max-width: 300px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">工程AI助手</div>
+                <div class="project-name">📁 某市政工程项目</div>
+                <button class="settings-btn" onclick="openSettings()">⚙️</button>
+            </div>
+            
+            <button class="new-chat-btn" onclick="startNewChat()">
+                <span>💬</span>
+                <span>新建对话</span>
+            </button>
+            
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" onclick="switchTab('files')">
+                    <span>📁 文件</span>
+                </button>
+                <button class="sidebar-tab" onclick="switchTab('history')">
+                    <span>💬 对话</span>
+                </button>
+            </div>
+            
+            <div class="tab-content active" id="filesTab">
+                <div class="folder">
+                    <div class="folder-title">
+                        <span class="folder-icon">📁</span>
+                        施工图纸
+                    </div>
+                    <div class="file-list">
+                        <div class="file-item" onclick="openFile('建筑平面图.pdf', 'pdf')">📄 建筑平面图.pdf</div>
+                        <div class="file-item" onclick="openFile('结构施工图.pdf', 'pdf')">📄 结构施工图.pdf</div>
+                        <div class="file-item" onclick="openFile('电气系统图.pdf', 'pdf')">📄 电气系统图.pdf</div>
+                    </div>
+                </div>
+                
+                <div class="folder">
+                    <div class="folder-title">
+                        <span class="folder-icon">📁</span>
+                        合同文件
+                    </div>
+                    <div class="file-list">
+                        <div class="file-item" onclick="openFile('施工合同.pdf', 'pdf')">📄 施工合同.pdf</div>
+                        <div class="file-item" onclick="openFile('监理合同.pdf', 'pdf')">📄 监理合同.pdf</div>
+                    </div>
+                </div>
+                
+                <div class="folder">
+                    <div class="folder-title">
+                        <span class="folder-icon">📁</span>
+                        规范标准
+                    </div>
+                    <div class="file-list">
+                        <div class="file-item" onclick="openFile('施工质量验收规范.pdf', 'pdf')">📄 施工质量验收规范.pdf</div>
+                        <div class="file-item" onclick="openFile('混凝土施工规范.pdf', 'pdf')">📄 混凝土施工规范.pdf</div>
+                    </div>
+                </div>
+                
+                <div class="folder">
+                    <div class="folder-title">
+                        <span class="folder-icon">📁</span>
+                        生成文档
+                    </div>
+                    <div class="file-list">
+                        <div class="file-item" onclick="openFile('施工方案.docx', 'document')">📄 施工方案.docx</div>
+                        <div class="file-item" onclick="openFile('质量检查报告.docx', 'document')">📄 质量检查报告.docx</div>
+                    </div>
+                </div>
+                
+                <div class="upload-zone" id="uploadZone">
+                    <div>📎 拖拽文件到这里</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">添加到知识库</div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="historyTab">
+                <div class="chat-history" id="chatHistory">
+                    <div class="history-title">
+                        <div class="history-title-left">
+                            <span class="folder-icon">💬</span>
+                            <span>对话历史</span>
+                        </div>
+                        <div class="history-actions">
+                            <button class="history-action-btn" onclick="clearAllHistory()">清空</button>
+                        </div>
+                    </div>
+                    <div class="history-list" id="historyList">
+                        <div style="color: var(--text-tertiary); font-size: 12px; text-align: center; padding: 20px;">
+                            点击"新建对话"开始
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar-toggle" id="sidebarToggle">
+                <span>◀</span>
+            </div>
+            
+            <div class="main-header">
+                <div class="main-title" id="mainTitle">AI 对话助手</div>
+                <div class="view-toggle">
+                    <button class="view-btn active" id="chatViewBtn" onclick="switchView('chat')">
+                        <span>💬</span>
+                        <span>对话</span>
+                    </button>
+                    <button class="view-btn" id="canvasViewBtn" onclick="switchView('canvas')">
+                        <span>🎨</span>
+                        <span>Canvas</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="content-area">
+                <!-- 对话视图 -->
+                <div class="chat-view" id="chatView">
+                    <div class="chat-container">
+                        <div class="welcome-prompts" id="welcomePrompts">
+                            <div class="welcome-title">欢迎使用工程AI助手 Canvas版</div>
+                            <div class="welcome-subtitle">点击左侧文件查看，或选择下方场景开始对话</div>
+                            
+                            <div class="prompt-options">
+                                <div class="prompt-option" onclick="startChat('技术咨询')">
+                                    <div class="prompt-icon">🔍</div>
+                                    <div class="prompt-title">技术咨询</div>
+                                    <div class="prompt-desc">询问施工工艺、材料规范等技术问题</div>
+                                </div>
+                                
+                                <div class="prompt-option" onclick="startChat('文档生成')">
+                                    <div class="prompt-icon">📝</div>
+                                    <div class="prompt-title">文档生成</div>
+                                    <div class="prompt-desc">生成施工方案、检查清单等工程文档</div>
+                                </div>
+                                
+                                <div class="prompt-option" onclick="startChat('规范查询')">
+                                    <div class="prompt-icon">📚</div>
+                                    <div class="prompt-title">规范查询</div>
+                                    <div class="prompt-desc">查找相关法规条文和标准要求</div>
+                                </div>
+                                
+                                <div class="prompt-option" onclick="startChat('图纸分析')">
+                                    <div class="prompt-icon">📐</div>
+                                    <div class="prompt-title">图纸分析</div>
+                                    <div class="prompt-desc">打开图纸进行分析和标注</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-messages" id="chatMessages">
+                            <!-- 对话消息将在这里显示 -->
+                        </div>
+                    </div>
+                    
+                    <div class="input-area">
+                        <div class="input-container">
+                            <textarea class="input-field" id="inputField" placeholder="请输入您的问题..." rows="1"></textarea>
+                            <div class="input-actions">
+                                <button class="attach-btn" id="tempUploadBtn" title="临时上传（仅用于当前对话）">📎</button>
+                                <button class="send-button" id="sendButton">
+                                    <span>▶</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="current-files" id="currentFiles">
+                            <div class="current-files-title">当前对话文件</div>
+                            <div id="currentFilesList"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Canvas视图 -->
+                <div class="canvas-view hidden" id="canvasView">
+                    <div class="canvas-toolbar">
+                        <div class="canvas-info">
+                            <div class="canvas-title" id="canvasTitle">未打开文件</div>
+                            <div class="canvas-type" id="canvasType">Canvas</div>
+                        </div>
+                        <div class="canvas-actions">
+                            <button class="canvas-btn" onclick="saveCanvas()">
+                                <span>💾</span>
+                                <span>保存</span>
+                            </button>
+                            <button class="canvas-btn" onclick="shareCanvas()">
+                                <span>🔗</span>
+                                <span>分享</span>
+                            </button>
+                            <button class="canvas-btn primary" onclick="aiCollaborate()">
+                                <span>🤖</span>
+                                <span>AI协作</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="canvas-content" id="canvasContent">
+                        <div class="canvas-empty">
+                            <div class="canvas-empty-icon">🎨</div>
+                            <div class="canvas-empty-title">Canvas 等待中</div>
+                            <div class="canvas-empty-desc">点击左侧文件或通过对话"打开图纸"来开始使用Canvas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 设置面板 -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-panel">
+            <div class="settings-header">
+                <h2 class="settings-title">⚙️ 个人设置</h2>
+                <button class="settings-close" onclick="closeSettings()">×</button>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-section-title">👤 个人信息</h3>
+                <div class="settings-item">
+                    <div class="user-avatar" id="userAvatar">👤</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">工程师</div>
+                        <div class="user-role" id="userRole">项目工程师</div>
+                    </div>
+                    <button class="settings-btn" onclick="editProfile()">编辑</button>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">用户名</div>
+                        <div class="settings-item-desc">用于对话中的显示名称</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <input type="text" class="settings-input" id="userNameInput" placeholder="请输入用户名">
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">职位</div>
+                        <div class="settings-item-desc">您的职位或专业领域</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <input type="text" class="settings-input" id="userRoleInput" placeholder="请输入职位">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-section-title">🎨 主题设置</h3>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">主题模式</div>
+                        <div class="settings-item-desc">选择浅色或深色主题</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <div class="theme-toggle">
+                            <button class="theme-option active" onclick="setTheme('light')">🌞 浅色</button>
+                            <button class="theme-option" onclick="setTheme('dark')">🌙 深色</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">配色方案</div>
+                        <div class="settings-item-desc">当前使用优雅紫色配色</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <span style="color: var(--primary-color);">● 优雅紫色</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-section-title">🎨 Canvas设置</h3>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">自动切换到Canvas</div>
+                        <div class="settings-item-desc">打开文件时自动切换到Canvas视图</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <div class="theme-toggle">
+                            <button class="theme-option active" onclick="toggleAutoCanvas(true)">开启</button>
+                            <button class="theme-option" onclick="toggleAutoCanvas(false)">关闭</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">AI协作提示</div>
+                        <div class="settings-item-desc">显示AI协作状态和建议</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <div class="theme-toggle">
+                            <button class="theme-option active" onclick="toggleAIHints(true)">显示</button>
+                            <button class="theme-option" onclick="toggleAIHints(false)">隐藏</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-section-title">💬 对话设置</h3>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">显示思考过程</div>
+                        <div class="settings-item-desc">是否显示AI的思考过程</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <div class="theme-toggle">
+                            <button class="theme-option active" onclick="toggleThinking(true)">显示</button>
+                            <button class="theme-option" onclick="toggleThinking(false)">隐藏</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">自动保存对话</div>
+                        <div class="settings-item-desc">自动保存对话历史到本地</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <div class="theme-toggle">
+                            <button class="theme-option active" onclick="toggleAutoSave(true)">开启</button>
+                            <button class="theme-option" onclick="toggleAutoSave(false)">关闭</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3 class="settings-section-title">📊 数据管理</h3>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">清除对话历史</div>
+                        <div class="settings-item-desc">删除所有保存的对话记录</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <button class="settings-btn secondary" onclick="clearAllData()">清除</button>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-label">导出数据</div>
+                        <div class="settings-item-desc">导出对话记录和设置</div>
+                    </div>
+                    <div class="settings-item-content">
+                        <button class="settings-btn secondary" onclick="exportData()">导出</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-actions">
+                <button class="settings-btn secondary" onclick="resetSettings()">重置设置</button>
+                <button class="settings-btn" onclick="saveSettings()">保存设置</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let chatStarted = false;
+        let currentThinkingProcess = null;
+        let chatHistory = [];
+        let currentChatId = null;
+        let pinnedChats = new Set();
+        let currentView = 'chat';
+        let currentCanvasFile = null;
+        let currentCanvasType = null;
+        
+        // 设置相关变量
+        let userSettings = {
+            theme: 'light',
+            userName: '工程师',
+            userRole: '项目工程师',
+            showThinking: true,
+            autoSave: true,
+            autoCanvas: true,
+            showAIHints: true
+        };
+        
+        // 初始化主题
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+        }
+        
+        // 设置主题
+        function setTheme(theme) {
+            userSettings.theme = theme;
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            // 更新主题切换按钮状态
+            document.querySelectorAll('.theme-option').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const activeBtn = document.querySelector(`.theme-option[onclick*="${theme}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
+        
+        // 打开设置面板
+        function openSettings() {
+            document.getElementById('settingsOverlay').classList.add('show');
+            loadUserSettings();
+        }
+        
+        // 关闭设置面板
+        function closeSettings() {
+            document.getElementById('settingsOverlay').classList.remove('show');
+        }
+        
+        // 加载用户设置
+        function loadUserSettings() {
+            const savedSettings = localStorage.getItem('userSettings');
+            if (savedSettings) {
+                userSettings = { ...userSettings, ...JSON.parse(savedSettings) };
+            }
+            
+            // 更新界面
+            document.getElementById('userName').textContent = userSettings.userName;
+            document.getElementById('userRole').textContent = userSettings.userRole;
+            document.getElementById('userNameInput').value = userSettings.userName;
+            document.getElementById('userRoleInput').value = userSettings.userRole;
+            
+            // 更新主题
+            setTheme(userSettings.theme);
+            
+            // 更新其他设置按钮状态
+            updateSettingsButtons();
+        }
+        
+        // 更新设置按钮状态
+        function updateSettingsButtons() {
+            // 思考过程设置
+            document.querySelectorAll('[onclick*="toggleThinking"]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const thinkingBtn = document.querySelector(`[onclick*="toggleThinking(${userSettings.showThinking})"]`);
+            if (thinkingBtn) thinkingBtn.classList.add('active');
+            
+            // 自动保存设置
+            document.querySelectorAll('[onclick*="toggleAutoSave"]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const autoSaveBtn = document.querySelector(`[onclick*="toggleAutoSave(${userSettings.autoSave})"]`);
+            if (autoSaveBtn) autoSaveBtn.classList.add('active');
+            
+            // 自动Canvas设置
+            document.querySelectorAll('[onclick*="toggleAutoCanvas"]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const autoCanvasBtn = document.querySelector(`[onclick*="toggleAutoCanvas(${userSettings.autoCanvas})"]`);
+            if (autoCanvasBtn) autoCanvasBtn.classList.add('active');
+            
+            // AI提示设置
+            document.querySelectorAll('[onclick*="toggleAIHints"]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const aiHintsBtn = document.querySelector(`[onclick*="toggleAIHints(${userSettings.showAIHints})"]`);
+            if (aiHintsBtn) aiHintsBtn.classList.add('active');
+        }
+        
+        // 保存设置
+        function saveSettings() {
+            userSettings.userName = document.getElementById('userNameInput').value || '工程师';
+            userSettings.userRole = document.getElementById('userRoleInput').value || '项目工程师';
+            
+            localStorage.setItem('userSettings', JSON.stringify(userSettings));
+            
+            // 更新界面显示
+            document.getElementById('userName').textContent = userSettings.userName;
+            document.getElementById('userRole').textContent = userSettings.userRole;
+            document.getElementById('userAvatar').textContent = userSettings.userName.charAt(0);
+            
+            closeSettings();
+            
+            // 显示保存成功提示
+            showNotification('设置已保存', 'success');
+        }
+        
+        // 重置设置
+        function resetSettings() {
+            if (confirm('确定要重置所有设置吗？')) {
+                localStorage.removeItem('userSettings');
+                localStorage.removeItem('theme');
+                userSettings = {
+                    theme: 'light',
+                    userName: '工程师',
+                    userRole: '项目工程师',
+                    showThinking: true,
+                    autoSave: true,
+                    autoCanvas: true,
+                    showAIHints: true
+                };
+                loadUserSettings();
+                showNotification('设置已重置', 'success');
+            }
+        }
+        
+        // 切换思考过程显示
+        function toggleThinking(show) {
+            userSettings.showThinking = show;
+            updateSettingsButtons();
+        }
+        
+        // 切换自动保存
+        function toggleAutoSave(enable) {
+            userSettings.autoSave = enable;
+            updateSettingsButtons();
+        }
+        
+        // 切换自动Canvas
+        function toggleAutoCanvas(enable) {
+            userSettings.autoCanvas = enable;
+            updateSettingsButtons();
+        }
+        
+        // 切换AI提示
+        function toggleAIHints(show) {
+            userSettings.showAIHints = show;
+            updateSettingsButtons();
+        }
+        
+        // 编辑个人资料
+        function editProfile() {
+            const nameInput = document.getElementById('userNameInput');
+            const roleInput = document.getElementById('userRoleInput');
+            nameInput.focus();
+        }
+        
+        // 清除所有数据
+        function clearAllData() {
+            if (confirm('确定要清除所有对话历史吗？此操作不可恢复。')) {
+                localStorage.removeItem('chatHistory');
+                chatHistory = [];
+                pinnedChats.clear();
+                updateChatHistory();
+                showNotification('数据已清除', 'success');
+            }
+        }
+        
+        // 导出数据
+        function exportData() {
+            const exportData = {
+                settings: userSettings,
+                chatHistory: chatHistory,
+                exportTime: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `工程AI助手_数据导出_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showNotification('数据导出成功', 'success');
+        }
+        
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                background: var(--primary-color);
+                color: var(--text-inverse);
+                border-radius: 8px;
+                z-index: 10001;
+                font-size: 14px;
+                box-shadow: var(--shadow-md);
+                animation: slideInRight 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+        
+        // 侧边栏切换
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            
+            sidebar.classList.toggle('collapsed');
+            toggle.innerHTML = sidebar.classList.contains('collapsed') ? 
+                '<span>▶</span>' : '<span>◀</span>';
+        });
+        
+        // 标签页切换
+        function switchTab(tabName) {
+            // 移除所有active类
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 添加active类到当前标签
+            event.target.classList.add('active');
+            
+            // 显示对应内容
+            if (tabName === 'files') {
+                document.getElementById('filesTab').classList.add('active');
+            } else if (tabName === 'history') {
+                document.getElementById('historyTab').classList.add('active');
+            }
+        }
+        
+        // 视图切换
+        function switchView(viewName) {
+            currentView = viewName;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (viewName === 'chat') {
+                document.getElementById('chatViewBtn').classList.add('active');
+                document.getElementById('chatView').classList.remove('hidden');
+                document.getElementById('canvasView').classList.add('hidden');
+                document.getElementById('mainTitle').textContent = 'AI 对话助手';
+            } else if (viewName === 'canvas') {
+                document.getElementById('canvasViewBtn').classList.add('active');
+                document.getElementById('chatView').classList.add('hidden');
+                document.getElementById('canvasView').classList.remove('hidden');
+                document.getElementById('mainTitle').textContent = 'Canvas 画布';
+            }
+        }
+        
+        // 打开文件
+        function openFile(fileName, fileType) {
+            currentCanvasFile = fileName;
+            currentCanvasType = fileType;
+            
+            // 更新Canvas标题和类型
+            document.getElementById('canvasTitle').textContent = fileName;
+            document.getElementById('canvasType').textContent = fileType === 'pdf' ? 'PDF查看器' : '文档编辑器';
+            
+            // 加载Canvas内容
+            loadCanvasContent(fileName, fileType);
+            
+            // 如果设置了自动切换到Canvas
+            if (userSettings.autoCanvas) {
+                switchView('canvas');
+            }
+            
+            // 在对话中添加消息
+            if (chatStarted) {
+                addMessage('ai', `我已为您打开文件"${fileName}"。${fileType === 'pdf' ? '您可以在Canvas中查看PDF内容，我可以帮您分析图纸或添加标注。' : '您可以在Canvas中编辑文档内容，我可以帮您优化文档结构或补充内容。'}`);
+            }
+        }
+        
+        // 加载Canvas内容
+        function loadCanvasContent(fileName, fileType) {
+            const canvasContent = document.getElementById('canvasContent');
+            
+            if (fileType === 'pdf') {
+                // 创建PDF查看器
+                canvasContent.innerHTML = `
+                    <div class="pdf-viewer">
+                        <div class="pdf-controls">
+                            <div class="pdf-nav">
+                                <button class="pdf-nav-btn" onclick="previousPage()">◀</button>
+                                <span class="pdf-page-info">第 1 页 / 共 5 页</span>
+                                <button class="pdf-nav-btn" onclick="nextPage()">▶</button>
+                            </div>
+                            <div class="pdf-zoom">
+                                <button class="pdf-zoom-btn" onclick="zoomOut()">-</button>
+                                <span class="pdf-zoom-level">100%</span>
+                                <button class="pdf-zoom-btn" onclick="zoomIn()">+</button>
+                            </div>
+                        </div>
+                        <div class="pdf-display">
+                            <div class="pdf-page" style="width: 600px; height: 800px; background: white; display: flex; align-items: center; justify-content: center; color: #666;">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 24px; margin-bottom: 12px;">📄</div>
+                                    <div style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">${fileName}</div>
+                                    <div style="font-size: 14px;">模拟PDF内容显示</div>
+                                    <div style="font-size: 12px; margin-top: 16px; color: #999;">
+                                        实际项目中会显示真实的PDF内容
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (fileType === 'document') {
+                // 创建文档编辑器
+                canvasContent.innerHTML = `
+                    <div class="document-editor">
+                        <div class="editor-toolbar">
+                            <div class="editor-btn-group">
+                                <button class="editor-btn active" onclick="formatText('bold')"><strong>B</strong></button>
+                                <button class="editor-btn" onclick="formatText('italic')"><em>I</em></button>
+                                <button class="editor-btn" onclick="formatText('underline')"><u>U</u></button>
+                            </div>
+                            <div class="editor-btn-group">
+                                <button class="editor-btn" onclick="formatText('h1')">H1</button>
+                                <button class="editor-btn" onclick="formatText('h2')">H2</button>
+                                <button class="editor-btn" onclick="formatText('h3')">H3</button>
+                            </div>
+                            <div class="editor-btn-group">
+                                <button class="editor-btn" onclick="formatText('list')">• 列表</button>
+                                <button class="editor-btn" onclick="formatText('table')">📊 表格</button>
+                            </div>
+                        </div>
+                        <div class="editor-content">
+                            <textarea class="editor-textarea" placeholder="开始编辑文档内容...">${getDocumentContent(fileName)}</textarea>
+                            ${userSettings.showAIHints ? '<div class="ai-collaboration" onclick="aiCollaborate()">🤖 AI协作中</div>' : ''}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // 获取文档内容（模拟）
+        function getDocumentContent(fileName) {
+            const templates = {
+                '施工方案.docx': `# 市政工程施工方案
+
+## 1. 工程概况
+本项目为某市政道路工程，全长约3.2公里，包括道路、排水、照明等配套设施。
+
+## 2. 施工准备
+### 2.1 技术准备
+- 施工图纸审查
+- 施工组织设计编制
+- 技术交底
+
+### 2.2 材料准备
+- 水泥：P.O 42.5级
+- 钢筋：HRB400级
+- 碎石：5-31.5mm连续级配
+
+## 3. 施工工艺
+详细的施工步骤和技术要求...
+
+## 4. 质量控制
+质量检查要点和验收标准...`,
+
+                '质量检查报告.docx': `# 工程质量检查报告
+
+## 检查基本信息
+- 检查日期：2024年1月15日
+- 检查内容：混凝土浇筑质量
+- 检查部位：主体结构第3层
+
+## 检查结果
+### 符合要求项目
+1. 混凝土强度等级符合设计要求
+2. 钢筋保护层厚度合格
+3. 构件尺寸偏差在允许范围内
+
+### 发现问题
+1. 部分区域表面平整度超差
+2. 个别预留洞口尺寸偏小
+
+## 整改建议
+针对发现的问题，建议采取以下整改措施...`
+            };
+            
+            return templates[fileName] || `# ${fileName}\n\n这里是${fileName}的内容，您可以开始编辑...`;
+        }
+        
+        // PDF操作函数
+        function previousPage() {
+            showNotification('切换到上一页');
+        }
+        
+        function nextPage() {
+            showNotification('切换到下一页');
+        }
+        
+        function zoomIn() {
+            showNotification('放大PDF');
+        }
+        
+        function zoomOut() {
+            showNotification('缩小PDF');
+        }
+        
+        // 文档格式化
+        function formatText(type) {
+            showNotification(`应用格式：${type}`);
+        }
+        
+        // Canvas操作函数
+        function saveCanvas() {
+            showNotification('Canvas已保存');
+        }
+        
+        function shareCanvas() {
+            showNotification('Canvas分享链接已生成');
+        }
+        
+        function aiCollaborate() {
+            if (!chatStarted) {
+                startNewChat();
+            }
+            
+            if (currentCanvasFile) {
+                addMessage('ai', `我已准备好协作编辑"${currentCanvasFile}"。我可以帮您：\n\n• 分析和标注PDF图纸\n• 优化文档内容结构\n• 添加专业技术建议\n• 自动生成相关内容\n\n请告诉我您需要什么帮助？`);
+                switchView('chat');
+            } else {
+                addMessage('ai', '请先打开一个文件，然后我就可以协助您进行编辑和分析了。');
+                switchView('chat');
+            }
+        }
+        
+        // 新建对话
+        function startNewChat() {
+            chatStarted = true;
+            currentChatId = generateChatId();
+            
+            // 清空当前对话
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('welcomePrompts').classList.add('hidden');
+            document.getElementById('chatMessages').classList.add('show');
+            
+            // 创建新的对话记录
+            const chatRecord = {
+                id: currentChatId,
+                category: '新对话',
+                startTime: new Date(),
+                messages: []
+            };
+            
+            chatHistory.unshift(chatRecord);
+            updateChatHistory();
+            
+            addMessage('ai', '您好！我是您的工程AI助手。我可以帮您分析图纸、编辑文档，也可以在Canvas中进行实时协作。请告诉我您需要什么帮助？');
+        }
+        
+        // 开始对话
+        function startChat(category) {
+            if (!chatStarted) {
+                startNewChat();
+                // 更新对话类别
+                const currentChat = chatHistory.find(c => c.id === currentChatId);
+                if (currentChat) {
+                    currentChat.category = category;
+                    updateChatHistory();
+                }
+            }
+            
+            if (category === '图纸分析') {
+                addMessage('ai', '我可以帮您分析各种工程图纸。请点击左侧文件夹中的图纸文件，或者告诉我您想分析哪种类型的图纸。我可以：\n\n• 识别图纸内容和尺寸\n• 检查设计规范符合性\n• 添加标注和批注\n• 生成图纸分析报告');
+            } else {
+                addMessage('ai', `您选择了"${category}"相关的咨询。我可以为您提供专业的技术支持和解答。`);
+            }
+        }
+        
+        // 生成对话ID
+        function generateChatId() {
+            return 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // 更新对话历史显示
+        function updateChatHistory() {
+            const historyList = document.getElementById('historyList');
+            
+            if (chatHistory.length === 0) {
+                historyList.innerHTML = `
+                    <div style="color: var(--text-tertiary); font-size: 12px; text-align: center; padding: 20px;">
+                        点击"新建对话"开始
+                    </div>
+                `;
+                return;
+            }
+            
+            // 排序：固定的在前，然后按时间排序
+            const sortedHistory = [...chatHistory].sort((a, b) => {
+                const aPinned = pinnedChats.has(a.id);
+                const bPinned = pinnedChats.has(b.id);
+                if (aPinned && !bPinned) return -1;
+                if (!aPinned && bPinned) return 1;
+                return 0; // 保持原有时间顺序
+            });
+            
+            historyList.innerHTML = sortedHistory.slice(0, 15).map(chat => {
+                const firstUserMessage = chat.messages.find(msg => msg.sender === 'user');
+                const preview = firstUserMessage ? firstUserMessage.content : `${chat.category}咨询`;
+                const isActive = chat.id === currentChatId;
+                const isPinned = pinnedChats.has(chat.id);
+                
+                return `
+                    <div class="history-item ${isActive ? 'active' : ''} ${isPinned ? 'pinned' : ''}" onclick="switchToChat('${chat.id}')">
+                        <div class="history-content">
+                            <div class="history-time">${formatTime(chat.startTime)}</div>
+                            <div class="history-preview">${preview}</div>
+                            <div class="history-badges">
+                                ${isActive ? '<span class="history-badge current">当前</span>' : ''}
+                                ${isPinned ? '<span class="history-badge pinned">📌</span>' : ''}
+                            </div>
+                        </div>
+                        <div class="history-menu">
+                            <button class="history-menu-btn" onclick="showChatMenu(event, '${chat.id}')">⋮</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 切换到指定对话
+        function switchToChat(chatId) {
+            const chat = chatHistory.find(c => c.id === chatId);
+            if (!chat) return;
+            
+            currentChatId = chatId;
+            
+            // 清空当前对话
+            document.getElementById('chatMessages').innerHTML = '';
+            
+            // 重新显示历史消息
+            chat.messages.forEach(msg => {
+                addMessage(msg.sender, msg.content, false);
+            });
+            
+            updateChatHistory();
+            
+            if (!chatStarted) {
+                chatStarted = true;
+                document.getElementById('welcomePrompts').classList.add('hidden');
+                document.getElementById('chatMessages').classList.add('show');
+            }
+        }
+        
+        // 格式化时间
+        function formatTime(date) {
+            const now = new Date();
+            const diff = now - date;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(minutes / 60);
+            const days = Math.floor(hours / 24);
+            
+            if (days > 0) return `${days}天前`;
+            if (hours > 0) return `${hours}小时前`;
+            if (minutes > 0) return `${minutes}分钟前`;
+            return '刚刚';
+        }
+        
+        // 显示对话菜单
+        function showChatMenu(event, chatId) {
+            event.stopPropagation();
+            
+            // 移除其他菜单
+            document.querySelectorAll('.history-dropdown').forEach(dropdown => {
+                dropdown.remove();
+            });
+            
+            const isPinned = pinnedChats.has(chatId);
+            const dropdown = document.createElement('div');
+            dropdown.className = 'history-dropdown show';
+            dropdown.innerHTML = `
+                <div class="dropdown-item" onclick="renameChatPrompt('${chatId}')">🏷️ 重命名</div>
+                <div class="dropdown-item" onclick="togglePinChat('${chatId}')">${isPinned ? '📌 取消固定' : '📌 固定对话'}</div>
+                <div class="dropdown-item" onclick="duplicateChat('${chatId}')">📄 复制对话</div>
+                <div class="dropdown-item danger" onclick="deleteChat('${chatId}')">🗑️ 删除</div>
+            `;
+            
+            const historyItem = event.target.closest('.history-item');
+            historyItem.style.position = 'relative';
+            historyItem.appendChild(dropdown);
+            
+            // 点击外部关闭菜单
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu() {
+                    dropdown.remove();
+                    document.removeEventListener('click', closeMenu);
+                });
+            }, 100);
+        }
+        
+        // 重命名对话
+        function renameChatPrompt(chatId) {
+            const chat = chatHistory.find(c => c.id === chatId);
+            if (!chat) return;
+            
+            const newName = prompt('请输入新的对话名称:', chat.category);
+            if (newName && newName.trim()) {
+                chat.category = newName.trim();
+                updateChatHistory();
+            }
+        }
+        
+        // 固定/取消固定对话
+        function togglePinChat(chatId) {
+            if (pinnedChats.has(chatId)) {
+                pinnedChats.delete(chatId);
+            } else {
+                pinnedChats.add(chatId);
+            }
+            updateChatHistory();
+        }
+        
+        // 删除对话
+        function deleteChat(chatId) {
+            if (confirm('确定要删除这个对话吗？')) {
+                chatHistory = chatHistory.filter(c => c.id !== chatId);
+                pinnedChats.delete(chatId);
+                
+                if (currentChatId === chatId) {
+                    // 如果删除的是当前对话，切换到最新的对话或显示欢迎页
+                    if (chatHistory.length > 0) {
+                        switchToChat(chatHistory[0].id);
+                    } else {
+                        currentChatId = null;
+                        chatStarted = false;
+                        document.getElementById('chatMessages').classList.remove('show');
+                        document.getElementById('welcomePrompts').classList.remove('hidden');
+                    }
+                }
+                
+                updateChatHistory();
+            }
+        }
+        
+        // 复制对话
+        function duplicateChat(chatId) {
+            const chat = chatHistory.find(c => c.id === chatId);
+            if (!chat) return;
+            
+            const newChat = {
+                id: generateChatId(),
+                category: chat.category + ' (副本)',
+                startTime: new Date(),
+                messages: [...chat.messages]
+            };
+            
+            chatHistory.unshift(newChat);
+            updateChatHistory();
+            switchToChat(newChat.id);
+        }
+        
+        // 清空所有历史
+        function clearAllHistory() {
+            if (confirm('确定要清空所有对话历史吗？')) {
+                chatHistory = [];
+                pinnedChats.clear();
+                currentChatId = null;
+                chatStarted = false;
+                document.getElementById('chatMessages').classList.remove('show');
+                document.getElementById('welcomePrompts').classList.remove('hidden');
+                updateChatHistory();
+            }
+        }
+        
+        // 添加消息
+        function addMessage(sender, content, saveToHistory = true) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            // 添加头像
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = sender === 'ai' ? '🤖' : '👤';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = content.replace(/\n/g, '<br>');
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            chatMessages.appendChild(messageDiv);
+            
+            // 保存到对话历史
+            if (saveToHistory && currentChatId) {
+                const currentChat = chatHistory.find(c => c.id === currentChatId);
+                if (currentChat) {
+                    currentChat.messages.push({
+                        sender: sender,
+                        content: content,
+                        timestamp: new Date()
+                    });
+                    updateChatHistory();
+                }
+            }
+            
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // 创建思考过程组件
+        function createThinkingProcess() {
+            const chatMessages = document.getElementById('chatMessages');
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'thinking-process';
+            thinkingDiv.innerHTML = `
+                <div class="thinking-header" onclick="toggleThinking(this)">
+                    <div class="thinking-title">
+                        <span class="thinking-icon">🤔</span>
+                        <span>AI正在思考...</span>
+                    </div>
+                    <div class="thinking-status">分析中</div>
+                    <button class="thinking-toggle">▼</button>
+                </div>
+                <div class="thinking-content">
+                    <div class="thinking-steps"></div>
+                    <div class="thinking-progress">
+                        <div class="thinking-progress-bar"></div>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(thinkingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return thinkingDiv;
+        }
+        
+        // 切换思考过程展示
+        function toggleThinking(header) {
+            const thinkingProcess = header.parentElement;
+            const toggle = header.querySelector('.thinking-toggle');
+            
+            thinkingProcess.classList.toggle('collapsed');
+            toggle.classList.toggle('expanded');
+        }
+        
+        // 添加思考步骤
+        function addThinkingStep(thinkingProcess, step, content, isCompleted = false, isCurrent = false) {
+            const stepsContainer = thinkingProcess.querySelector('.thinking-steps');
+            const stepDiv = document.createElement('div');
+            stepDiv.className = `thinking-step ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''}`;
+            
+            const stepIcons = {
+                '问题分析': '🔍',
+                '文件分析': '📄',
+                '知识检索': '📚',
+                '推理整合': '🧠',
+                '答案生成': '📝',
+                'Canvas准备': '🎨'
+            };
+            
+            stepDiv.innerHTML = `
+                <div class="step-header">
+                    <span class="step-icon">${stepIcons[step] || '💭'}</span>
+                    <span class="step-title">${step}</span>
+                    <span class="step-time">${new Date().toLocaleTimeString()}</span>
+                </div>
+                <div class="step-content">${content}</div>
+            `;
+            
+            stepsContainer.appendChild(stepDiv);
+            
+            // 滚动到最新步骤
+            stepDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        // 更新思考进度
+        function updateThinkingProgress(thinkingProcess, progress) {
+            const progressBar = thinkingProcess.querySelector('.thinking-progress-bar');
+            progressBar.style.width = `${progress}%`;
+        }
+        
+        // 完成思考过程
+        function completeThinking(thinkingProcess) {
+            const header = thinkingProcess.querySelector('.thinking-header');
+            const title = header.querySelector('.thinking-title span:last-child');
+            const status = header.querySelector('.thinking-status');
+            const icon = header.querySelector('.thinking-icon');
+            
+            title.textContent = '思考完成';
+            status.textContent = '已完成';
+            icon.textContent = '✅';
+            icon.style.animation = 'none';
+            
+            updateThinkingProgress(thinkingProcess, 100);
+            
+            // 添加完成效果
+            thinkingProcess.style.borderColor = '#4caf50';
+            thinkingProcess.style.boxShadow = '0 4px 20px rgba(76,175,80,0.2)';
+            
+            // 3秒后自动收缩
+            setTimeout(() => {
+                thinkingProcess.style.transition = 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                thinkingProcess.classList.add('collapsed');
+                
+                const toggle = header.querySelector('.thinking-toggle');
+                toggle.classList.remove('expanded');
+                toggle.style.transition = 'transform 0.3s ease';
+            }, 3000);
+        }
+        
+        // 模拟AI思考过程
+        function simulateThinking(includeCanvas = false) {
+            const thinkingProcess = createThinkingProcess();
+            currentThinkingProcess = thinkingProcess;
+            
+            const baseSteps = [
+                { name: '问题分析', content: '正在分析用户提出的技术问题...', duration: 1000 },
+                { name: '知识检索', content: '从项目文件和规范库中搜索相关信息...', duration: 1500 },
+            ];
+            
+            if (includeCanvas) {
+                baseSteps.push({ name: 'Canvas准备', content: '准备Canvas协作环境和工具...', duration: 800 });
+            }
+            
+            baseSteps.push(
+                { name: '推理整合', content: '整合多个信息源，进行逻辑推理...', duration: 1200 },
+                { name: '答案生成', content: '基于分析结果生成准确的回答...', duration: 800 }
+            );
+            
+            let currentStep = 0;
+            let totalDuration = baseSteps.reduce((sum, step) => sum + step.duration, 0);
+            let elapsed = 0;
+            
+            function processStep() {
+                if (currentStep < baseSteps.length) {
+                    const step = baseSteps[currentStep];
+                    
+                    // 添加当前步骤
+                    addThinkingStep(thinkingProcess, step.name, step.content, false, true);
+                    
+                    // 更新进度
+                    elapsed += step.duration;
+                    updateThinkingProgress(thinkingProcess, (elapsed / totalDuration) * 100);
+                    
+                    setTimeout(() => {
+                        // 标记当前步骤为完成
+                        const stepElements = thinkingProcess.querySelectorAll('.thinking-step');
+                        if (stepElements[currentStep]) {
+                            stepElements[currentStep].classList.remove('current');
+                            stepElements[currentStep].classList.add('completed');
+                        }
+                        
+                        currentStep++;
+                        
+                        if (currentStep < baseSteps.length) {
+                            processStep();
+                        } else {
+                            completeThinking(thinkingProcess);
+                        }
+                    }, step.duration);
+                }
+            }
+            
+            processStep();
+        }
+        
+        // 发送消息
+        document.getElementById('sendButton').addEventListener('click', function() {
+            const inputField = document.getElementById('inputField');
+            const message = inputField.value.trim();
+            
+            if (message) {
+                if (!chatStarted) {
+                    startChat('通用咨询');
+                }
+                
+                addMessage('user', message);
+                inputField.value = '';
+                
+                // 检查是否涉及文件操作
+                const includeCanvas = message.includes('打开') || message.includes('查看') || message.includes('编辑') || message.includes('图纸') || message.includes('文档');
+                
+                // 开始思考过程
+                simulateThinking(includeCanvas);
+                
+                // 思考完成后添加回答
+                setTimeout(() => {
+                    let response = '';
+                    
+                    if (message.includes('打开') && (message.includes('图纸') || message.includes('pdf'))) {
+                        response = '我来帮您打开图纸文件。请稍等，我正在Canvas中加载PDF查看器...\n\n您可以点击左侧的图纸文件，或者告诉我具体要查看哪个图纸。在Canvas中，我可以帮您：\n• 分析图纸内容和尺寸\n• 添加标注和批注\n• 检查设计规范\n• 生成分析报告';
+                        
+                        // 自动打开一个示例图纸
+                        setTimeout(() => {
+                            openFile('建筑平面图.pdf', 'pdf');
+                        }, 1000);
+                        
+                    } else if (message.includes('编辑') || message.includes('文档')) {
+                        response = '我来帮您编辑文档。正在Canvas中准备文档编辑器...\n\n您可以点击左侧的文档文件，或者告诉我要编辑哪个文档。在Canvas中，我可以帮您：\n• 优化文档结构\n• 补充技术内容\n• 格式化文档\n• 自动生成相关章节';
+                        
+                        // 自动打开一个示例文档
+                        setTimeout(() => {
+                            openFile('施工方案.docx', 'document');
+                        }, 1000);
+                        
+                    } else {
+                        response = `根据您的问题，我进行了深入分析。基于项目文件和相关规范，我建议您：\n\n1. 首先检查相关的技术规范要求\n2. 结合实际施工条件进行评估\n3. 制定详细的实施方案\n\n如果您需要查看具体的图纸或编辑文档，我可以在Canvas中为您提供直观的操作界面。`;
+                    }
+                    
+                    addMessage('ai', response);
+                    
+                    // 添加参考文献
+                    const lastMessage = document.querySelector('.message:last-child .message-content');
+                    const references = document.createElement('div');
+                    references.className = 'references';
+                    references.innerHTML = `
+                        <div class="reference-item">
+                            📄 <a href="#" class="reference-link">建筑工程施工质量验收统一标准 GB50300-2013</a>
+                        </div>
+                        <div class="reference-item">
+                            📄 <a href="#" class="reference-link">混凝土结构工程施工规范 GB50666-2011</a>
+                        </div>
+                        <div class="reference-item">
+                            📄 <a href="#" class="reference-link">项目施工图纸 - 结构详图</a>
+                        </div>
+                    `;
+                    lastMessage.appendChild(references);
+                    
+                }, includeCanvas ? 5400 : 4600); // 如果包含Canvas步骤，延长等待时间
+            }
+        });
+        
+        // 回车发送
+        document.getElementById('inputField').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('sendButton').click();
+            }
+        });
+        
+        // 临时文件上传
+        document.getElementById('tempUploadBtn').addEventListener('click', function() {
+            const file = {
+                name: 'demo_file.pdf',
+                size: 1024 * 1024,
+                type: 'application/pdf'
+            };
+            
+            document.getElementById('currentFiles').classList.add('show');
+            document.getElementById('currentFilesList').innerHTML = `
+                <div class="current-file-item">
+                    <span>📄</span>
+                    <span>${file.name}</span>
+                    <div class="file-actions">
+                        <span class="file-action">存库</span>
+                        <span class="file-action">删除</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTheme();
+            loadUserSettings();
+            updateChatHistory();
+        });
+        
+        // 点击设置面板外部关闭
+        document.getElementById('settingsOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程AI助手 - Modal Canvas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 主题变量 */
+        :root {
+            --primary-color: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --primary-light: #f3f4f6;
+            --secondary-color: #a78bfa;
+            --accent-color: #06b6d4;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f5f5f5;
+            --bg-hover: #f0f0f0;
+            --bg-active: #e8f0fe;
+            
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --text-inverse: #ffffff;
+            
+            --border-color: #e0e0e0;
+            --border-light: #f0f0f0;
+            --border-focus: #1a73e8;
+            
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.15);
+            
+            --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            --gradient-secondary: linear-gradient(135deg, #f3f4f6 0%, #faf5ff 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* 侧边栏样式 - 保持原始样式但简化 */
+        .sidebar {
+            width: 350px;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: margin-left 0.3s ease;
+        }
+        
+        .sidebar.collapsed {
+            margin-left: -330px;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .project-name {
+            font-size: 14px;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* 标签页样式 */
+        .sidebar-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .sidebar-tab {
+            flex: 1;
+            padding: 12px 16px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .sidebar-tab.active {
+            color: var(--primary-color);
+            background: var(--bg-primary);
+            font-weight: 500;
+        }
+        
+        .sidebar-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 文件项样式增强 */
+        .file-section {
+            margin-bottom: 24px;
+        }
+        
+        .file-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .file-item {
+            padding: 12px 16px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid var(--border-light);
+            background: var(--bg-primary);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .file-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary-color);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .file-item:hover {
+            background: var(--bg-active);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .file-item:hover::before {
+            transform: scaleY(1);
+        }
+        
+        .file-icon {
+            font-size: 20px;
+            width: 24px;
+            text-align: center;
+        }
+        
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .file-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .file-meta {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+        
+        .file-actions {
+            opacity: 0;
+            transition: opacity 0.2s;
+            display: flex;
+            gap: 4px;
+        }
+        
+        .file-item:hover .file-actions {
+            opacity: 1;
+        }
+        
+        .file-action-btn {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: var(--bg-hover);
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .file-action-btn:hover {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+        }
+        
+        /* 主要内容区域 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+            position: relative;
+        }
+        
+        .sidebar-toggle {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            z-index: 1000;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+        
+        .sidebar-toggle:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .chat-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .header-btn {
+            padding: 8px 12px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .header-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .header-btn.primary {
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+        }
+        
+        /* 对话区域 */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
+        
+        .welcome-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+        
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .quick-action {
+            padding: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .quick-action:hover {
+            background: var(--bg-active);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .action-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+            display: block;
+        }
+        
+        .action-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .action-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        
+        /* 输入区域 */
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: end;
+        }
+        
+        .input-field {
+            flex: 1;
+            min-height: 40px;
+            max-height: 120px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: border-color 0.2s ease;
+        }
+        
+        .input-field:focus {
+            border-color: var(--border-focus);
+        }
+        
+        .send-button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .send-button:hover {
+            background: var(--primary-hover);
+        }
+        
+        /* Modal覆盖层 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Canvas Modal */
+        .canvas-modal {
+            width: 95%;
+            height: 95%;
+            background: var(--bg-primary);
+            border-radius: 16px;
+            box-shadow: var(--shadow-xl);
+            display: flex;
+            flex-direction: column;
+            animation: slideInScale 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            border: 1px solid var(--border-color);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        /* Modal头部 */
+        .modal-header {
+            height: 60px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            justify-content: space-between;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .modal-btn {
+            padding: 8px 16px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .modal-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .modal-btn.primary {
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+        }
+        
+        .modal-btn.danger {
+            color: var(--error-color);
+            border-color: var(--error-color);
+        }
+        
+        .modal-btn.danger:hover {
+            background: var(--error-color);
+            color: var(--text-inverse);
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.2s;
+            margin-left: 16px;
+        }
+        
+        .close-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        /* Modal内容区域 */
+        .modal-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* PDF查看器 */
+        .pdf-viewer {
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .pdf-controls {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .pdf-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .pdf-nav-btn {
+            padding: 6px 12px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .pdf-nav-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .pdf-nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .page-info {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0 16px;
+        }
+        
+        .pdf-tools {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+        
+        .pdf-container {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .pdf-page {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            min-height: 600px;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .pdf-placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .pdf-placeholder-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            color: var(--primary-color);
+        }
+        
+        /* 文档编辑器 */
+        .document-editor {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        
+        .editor-toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            border-right: 1px solid var(--border-color);
+            padding-right: 16px;
+        }
+        
+        .toolbar-group:last-child {
+            border-right: none;
+            padding-right: 0;
+        }
+        
+        .toolbar-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .toolbar-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .toolbar-btn.active {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+        }
+        
+        .toolbar-select {
+            padding: 6px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+        }
+        
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            background: white;
+        }
+        
+        .editor-area {
+            min-height: 100%;
+            padding: 40px 60px;
+            outline: none;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .editor-area h1, .editor-area h2, .editor-area h3 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        
+        .editor-area h1 {
+            font-size: 28px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        .editor-area h2 {
+            font-size: 22px;
+        }
+        
+        .editor-area h3 {
+            font-size: 18px;
+        }
+        
+        .editor-area p {
+            margin-bottom: 16px;
+        }
+        
+        .editor-area ul, .editor-area ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+        
+        .editor-area li {
+            margin-bottom: 4px;
+        }
+        
+        .editor-area table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        
+        .editor-area th, .editor-area td {
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        .editor-area th {
+            background: var(--bg-secondary);
+            font-weight: 500;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                z-index: 1000;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .canvas-modal {
+                width: 98%;
+                height: 98%;
+                border-radius: 8px;
+            }
+            
+            .modal-header {
+                border-radius: 8px 8px 0 0;
+            }
+            
+            .editor-area {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 侧边栏 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">🏗️ 工程AI助手</div>
+                <div class="project-name">📁 某市政工程项目</div>
+                <button class="settings-btn" onclick="showSettings()">⚙️</button>
+            </div>
+            
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" onclick="switchTab('files')">📁 文件</button>
+                <button class="sidebar-tab" onclick="switchTab('chat')">💬 对话</button>
+            </div>
+            
+            <div class="tab-content active" id="filesTab">
+                <div class="file-section">
+                    <div class="file-section-title">
+                        <span>📄</span>
+                        <span>PDF文档</span>
+                    </div>
+                    
+                    <div class="file-item" onclick="openPDFModal('建筑平面图.pdf')">
+                        <div class="file-icon">📄</div>
+                        <div class="file-info">
+                            <div class="file-name">建筑平面图.pdf</div>
+                            <div class="file-meta">2.5MB • 10页</div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn" title="查看">👁️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-item" onclick="openPDFModal('结构施工图.pdf')">
+                        <div class="file-icon">📄</div>
+                        <div class="file-info">
+                            <div class="file-name">结构施工图.pdf</div>
+                            <div class="file-meta">3.2MB • 15页</div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn" title="查看">👁️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-item" onclick="openPDFModal('施工规范.pdf')">
+                        <div class="file-icon">📄</div>
+                        <div class="file-info">
+                            <div class="file-name">施工规范.pdf</div>
+                            <div class="file-meta">1.8MB • 25页</div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn" title="查看">👁️</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="file-section">
+                    <div class="file-section-title">
+                        <span>📝</span>
+                        <span>可编辑文档</span>
+                    </div>
+                    
+                    <div class="file-item" onclick="openDocumentModal('施工方案')">
+                        <div class="file-icon">📝</div>
+                        <div class="file-info">
+                            <div class="file-name">施工方案.docx</div>
+                            <div class="file-meta">已编辑 • 2小时前</div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn" title="编辑">✏️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-item" onclick="openDocumentModal('质量检查报告')">
+                        <div class="file-icon">📝</div>
+                        <div class="file-info">
+                            <div class="file-name">质量检查报告.docx</div>
+                            <div class="file-meta">已编辑 • 1天前</div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn" title="编辑">✏️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="file-item" onclick="openDocumentModal('安全管理制度')">
+                        <div class="file-icon">📝</div>
+                        <div class="file-info">
+                            <div class="file-name">安全管理制度.docx</div>
+                            <div class="file-meta">草稿 • 3天前</div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn" title="编辑">✏️</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="file-section">
+                    <div class="file-section-title">
+                        <span>➕</span>
+                        <span>创建新文档</span>
+                    </div>
+                    
+                    <div class="file-item" onclick="createNewDocument()">
+                        <div class="file-icon">✨</div>
+                        <div class="file-info">
+                            <div class="file-name">新建文档</div>
+                            <div class="file-meta">创建新的工程文档</div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="file-action-btn" title="创建">➕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="chatTab">
+                <div style="color: var(--text-secondary); text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+                    <div style="font-size: 16px; margin-bottom: 8px;">对话历史</div>
+                    <div style="font-size: 14px;">开发中...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 主要内容区域 -->
+        <div class="main-content">
+            <div class="sidebar-toggle" id="sidebarToggle">
+                <span>◀</span>
+            </div>
+            
+            <div class="chat-header">
+                <div class="chat-title">AI 对话助手</div>
+                <div class="header-actions">
+                    <button class="header-btn" onclick="showHelp()">❓ 帮助</button>
+                    <button class="header-btn primary" onclick="showQuickStart()">🚀 快速开始</button>
+                </div>
+            </div>
+            
+            <div class="chat-container">
+                <div class="welcome-screen">
+                    <div class="welcome-title">欢迎使用工程AI助手</div>
+                    <div class="welcome-subtitle">点击左侧文件开始工作，或选择下方快速操作</div>
+                    
+                    <div class="quick-actions">
+                        <div class="quick-action" onclick="openPDFModal('建筑平面图.pdf')">
+                            <span class="action-icon">📄</span>
+                            <div class="action-title">查看图纸</div>
+                            <div class="action-desc">打开PDF查看器查看工程图纸</div>
+                        </div>
+                        
+                        <div class="quick-action" onclick="openDocumentModal('施工方案')">
+                            <span class="action-icon">📝</span>
+                            <div class="action-title">编辑文档</div>
+                            <div class="action-desc">打开文档编辑器编写方案</div>
+                        </div>
+                        
+                        <div class="quick-action" onclick="createNewDocument()">
+                            <span class="action-icon">✨</span>
+                            <div class="action-title">新建文档</div>
+                            <div class="action-desc">创建新的工程文档</div>
+                        </div>
+                        
+                        <div class="quick-action" onclick="startAIChat()">
+                            <span class="action-icon">🤖</span>
+                            <div class="action-title">AI咨询</div>
+                            <div class="action-desc">向AI助手咨询技术问题</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <div class="input-container">
+                    <textarea class="input-field" id="inputField" placeholder="向AI助手提问..." rows="1"></textarea>
+                    <button class="send-button" id="sendButton">
+                        <span>▶</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal覆盖层 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="canvas-modal" id="canvasModal">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">
+                    <span id="modalIcon">📄</span>
+                    <span id="modalTitleText">文档标题</span>
+                </div>
+                <div class="modal-actions">
+                    <button class="modal-btn" id="shareBtn" onclick="shareDocument()">
+                        <span>🔗</span>
+                        <span>分享</span>
+                    </button>
+                    <button class="modal-btn primary" id="saveBtn" onclick="saveDocument()">
+                        <span>💾</span>
+                        <span>保存</span>
+                    </button>
+                    <button class="close-btn" onclick="closeModal()">×</button>
+                </div>
+            </div>
+            
+            <div class="modal-content" id="modalContent">
+                <!-- PDF查看器内容 -->
+                <div class="pdf-viewer" id="pdfViewerContent" style="display: none;">
+                    <div class="pdf-controls">
+                        <div class="pdf-nav">
+                            <button class="pdf-nav-btn" onclick="previousPage()">◀ 上一页</button>
+                            <button class="pdf-nav-btn" onclick="nextPage()">下一页 ▶</button>
+                        </div>
+                        <div class="page-info">
+                            第 <span id="currentPage">1</span> 页，共 <span id="totalPages">10</span> 页
+                        </div>
+                        <div class="pdf-tools">
+                            <button class="pdf-nav-btn" onclick="zoomOut()">🔍-</button>
+                            <button class="pdf-nav-btn" onclick="zoomIn()">🔍+</button>
+                            <button class="pdf-nav-btn" onclick="fitToWidth()">📐 适合宽度</button>
+                        </div>
+                    </div>
+                    <div class="pdf-container">
+                        <div class="pdf-page">
+                            <div class="pdf-placeholder">
+                                <div class="pdf-placeholder-icon">📄</div>
+                                <div style="font-size: 18px; margin-bottom: 8px;">PDF文档查看器</div>
+                                <div style="font-size: 14px;">这里将显示PDF文档内容</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 文档编辑器内容 -->
+                <div class="document-editor" id="documentEditorContent" style="display: none;">
+                    <div class="editor-toolbar">
+                        <div class="toolbar-group">
+                            <select class="toolbar-select" onchange="formatText('formatBlock', this.value)">
+                                <option value="div">正文</option>
+                                <option value="h1">标题 1</option>
+                                <option value="h2">标题 2</option>
+                                <option value="h3">标题 3</option>
+                            </select>
+                        </div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('bold')" title="粗体"><b>B</b></button>
+                            <button class="toolbar-btn" onclick="formatText('italic')" title="斜体"><i>I</i></button>
+                            <button class="toolbar-btn" onclick="formatText('underline')" title="下划线"><u>U</u></button>
+                            <button class="toolbar-btn" onclick="formatText('strikethrough')" title="删除线"><s>S</s></button>
+                        </div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('insertUnorderedList')" title="项目符号">•</button>
+                            <button class="toolbar-btn" onclick="formatText('insertOrderedList')" title="编号">1.</button>
+                            <button class="toolbar-btn" onclick="insertTable()" title="插入表格">⊞</button>
+                        </div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('justifyLeft')" title="左对齐">⬅</button>
+                            <button class="toolbar-btn" onclick="formatText('justifyCenter')" title="居中">↔</button>
+                            <button class="toolbar-btn" onclick="formatText('justifyRight')" title="右对齐">➡</button>
+                        </div>
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="undo()" title="撤销">↶</button>
+                            <button class="toolbar-btn" onclick="redo()" title="重做">↷</button>
+                        </div>
+                    </div>
+                    
+                    <div class="editor-content">
+                        <div class="editor-area" contenteditable="true" id="editorArea">
+                            <!-- 编辑器内容将在这里动态加载 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentModalType = 'pdf';
+        let currentDocumentName = '';
+        
+        // 侧边栏切换
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            
+            sidebar.classList.toggle('collapsed');
+            toggle.innerHTML = sidebar.classList.contains('collapsed') ? 
+                '<span>▶</span>' : '<span>◀</span>';
+        });
+        
+        // 标签页切换
+        function switchTab(tabName) {
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            if (tabName === 'files') {
+                document.getElementById('filesTab').classList.add('active');
+            } else if (tabName === 'chat') {
+                document.getElementById('chatTab').classList.add('active');
+            }
+        }
+        
+        // 打开PDF Modal
+        function openPDFModal(filename) {
+            currentModalType = 'pdf';
+            currentDocumentName = filename;
+            
+            document.getElementById('modalIcon').textContent = '📄';
+            document.getElementById('modalTitleText').textContent = filename;
+            document.getElementById('pdfViewerContent').style.display = 'flex';
+            document.getElementById('documentEditorContent').style.display = 'none';
+            
+            // 更新保存按钮状态
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.style.display = 'none'; // PDF不需要保存按钮
+            
+            document.getElementById('modalOverlay').classList.add('show');
+            
+            // 模拟加载PDF
+            setTimeout(() => {
+                updatePDFInfo(filename);
+            }, 500);
+        }
+        
+        // 打开文档编辑Modal
+        function openDocumentModal(docName) {
+            currentModalType = 'document';
+            currentDocumentName = docName;
+            
+            document.getElementById('modalIcon').textContent = '📝';
+            document.getElementById('modalTitleText').textContent = docName;
+            document.getElementById('documentEditorContent').style.display = 'flex';
+            document.getElementById('pdfViewerContent').style.display = 'none';
+            
+            // 显示保存按钮
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.style.display = 'flex';
+            
+            document.getElementById('modalOverlay').classList.add('show');
+            
+            // 加载文档内容
+            loadDocumentContent(docName);
+        }
+        
+        // 创建新文档
+        function createNewDocument() {
+            const docName = prompt('请输入新文档名称:') || '新建文档';
+            openDocumentModal(docName);
+            
+            // 设置新文档模板
+            document.getElementById('editorArea').innerHTML = `
+                <h1>${docName}</h1>
+                <p>开始编写您的工程文档...</p>
+                <h2>1. 概述</h2>
+                <p></p>
+                <h2>2. 详细内容</h2>
+                <p></p>
+            `;
+        }
+        
+        // 关闭Modal
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('show');
+        }
+        
+        // 点击覆盖层关闭Modal
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        // ESC键关闭Modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+        
+        // 更新PDF信息
+        function updatePDFInfo(filename) {
+            const pageInfo = {
+                '建筑平面图.pdf': { current: 1, total: 10 },
+                '结构施工图.pdf': { current: 1, total: 15 },
+                '施工规范.pdf': { current: 1, total: 25 }
+            };
+            
+            const info = pageInfo[filename] || { current: 1, total: 10 };
+            document.getElementById('currentPage').textContent = info.current;
+            document.getElementById('totalPages').textContent = info.total;
+        }
+        
+        // 加载文档内容
+        function loadDocumentContent(docName) {
+            const editorArea = document.getElementById('editorArea');
+            
+            const templates = {
+                '施工方案': `
+                    <h1>施工方案</h1>
+                    <h2>1. 工程概况</h2>
+                    <p>本工程为某市政道路改造项目，主要包括道路拓宽、桥梁加固和配套设施建设。工程总长度约2.5公里，设计车速60km/h。</p>
+                    
+                    <h2>2. 施工准备</h2>
+                    <h3>2.1 材料准备</h3>
+                    <ul>
+                        <li>水泥：采用42.5级普通硅酸盐水泥</li>
+                        <li>钢筋：HRB400级钢筋</li>
+                        <li>混凝土：C30商品混凝土</li>
+                    </ul>
+                    
+                    <h3>2.2 设备配置</h3>
+                    <ul>
+                        <li>挖掘机：2台</li>
+                        <li>装载机：1台</li>
+                        <li>混凝土搅拌车：3台</li>
+                    </ul>
+                    
+                    <h2>3. 施工工艺</h2>
+                    <ol>
+                        <li>基础开挖与处理</li>
+                        <li>钢筋绑扎</li>
+                        <li>模板安装</li>
+                        <li>混凝土浇筑</li>
+                        <li>养护与拆模</li>
+                    </ol>
+                `,
+                '质量检查报告': `
+                    <h1>质量检查报告</h1>
+                    <p><strong>项目名称：</strong> 某市政工程项目</p>
+                    <p><strong>检查日期：</strong> ${new Date().toLocaleDateString()}</p>
+                    <p><strong>检查人员：</strong> 工程师团队</p>
+                    <p><strong>检查标准：</strong> GB50300-2013</p>
+                    
+                    <h2>检查项目</h2>
+                    <table>
+                        <tr>
+                            <th>检查项目</th>
+                            <th>标准要求</th>
+                            <th>实际情况</th>
+                            <th>检查结果</th>
+                        </tr>
+                        <tr>
+                            <td>混凝土强度</td>
+                            <td>≥C30</td>
+                            <td>C32</td>
+                            <td>✅ 合格</td>
+                        </tr>
+                        <tr>
+                            <td>钢筋保护层厚度</td>
+                            <td>25±5mm</td>
+                            <td>24mm</td>
+                            <td>✅ 合格</td>
+                        </tr>
+                        <tr>
+                            <td>平整度</td>
+                            <td>±3mm</td>
+                            <td>±2mm</td>
+                            <td>✅ 合格</td>
+                        </tr>
+                    </table>
+                    
+                    <h2>检查结论</h2>
+                    <p>经检查，本次施工质量总体良好，各项指标均符合设计要求和相关规范标准。建议：</p>
+                    <ol>
+                        <li>继续严格按照施工规范执行</li>
+                        <li>加强现场质量监控</li>
+                        <li>做好后续养护工作</li>
+                    </ol>
+                    
+                    <p><strong>检查结果：</strong> <span style="color: green; font-weight: bold;">合格</span></p>
+                `,
+                '安全管理制度': `
+                    <h1>施工现场安全管理制度</h1>
+                    
+                    <h2>第一章 总则</h2>
+                    <p>为加强施工现场安全管理，保障施工人员生命安全和身体健康，根据《建筑法》、《安全生产法》等法律法规，结合本项目实际情况，制定本制度。</p>
+                    
+                    <h2>第二章 安全管理体系</h2>
+                    <h3>2.1 组织架构</h3>
+                    <ul>
+                        <li>项目经理：安全生产第一责任人</li>
+                        <li>安全总监：具体负责安全管理工作</li>
+                        <li>各工长：负责各自作业区域的安全管理</li>
+                    </ul>
+                    
+                    <h3>2.2 职责分工</h3>
+                    <p><strong>项目经理职责：</strong></p>
+                    <ol>
+                        <li>建立健全安全生产责任制</li>
+                        <li>组织制定安全生产规章制度</li>
+                        <li>保证安全生产投入</li>
+                    </ol>
+                    
+                    <h2>第三章 安全操作规程</h2>
+                    <h3>3.1 高空作业</h3>
+                    <ul>
+                        <li>高空作业必须系安全带</li>
+                        <li>安全带必须高挂低用</li>
+                        <li>严禁在安全网上行走</li>
+                    </ul>
+                    
+                    <h3>3.2 机械操作</h3>
+                    <ul>
+                        <li>操作人员必须持证上岗</li>
+                        <li>作业前检查设备状况</li>
+                        <li>严禁违章操作</li>
+                    </ul>
+                `
+            };
+            
+            editorArea.innerHTML = templates[docName] || `
+                <h1>${docName}</h1>
+                <p>开始编写您的工程文档...</p>
+                <h2>1. 概述</h2>
+                <p></p>
+            `;
+        }
+        
+        // PDF控制功能
+        function previousPage() {
+            const currentPage = parseInt(document.getElementById('currentPage').textContent);
+            if (currentPage > 1) {
+                document.getElementById('currentPage').textContent = currentPage - 1;
+            }
+        }
+        
+        function nextPage() {
+            const currentPage = parseInt(document.getElementById('currentPage').textContent);
+            const totalPages = parseInt(document.getElementById('totalPages').textContent);
+            if (currentPage < totalPages) {
+                document.getElementById('currentPage').textContent = currentPage + 1;
+            }
+        }
+        
+        function zoomIn() {
+            console.log('放大PDF');
+        }
+        
+        function zoomOut() {
+            console.log('缩小PDF');
+        }
+        
+        function fitToWidth() {
+            console.log('适合宽度');
+        }
+        
+        // 文档编辑功能
+        function formatText(command, value = null) {
+            document.execCommand(command, false, value);
+            document.getElementById('editorArea').focus();
+        }
+        
+        function insertTable() {
+            const tableHTML = `
+                <table>
+                    <tr>
+                        <th>列1</th>
+                        <th>列2</th>
+                        <th>列3</th>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+            `;
+            document.execCommand('insertHTML', false, tableHTML);
+        }
+        
+        function undo() {
+            document.execCommand('undo', false, null);
+        }
+        
+        function redo() {
+            document.execCommand('redo', false, null);
+        }
+        
+        // 保存文档
+        function saveDocument() {
+            if (currentModalType === 'document') {
+                const content = document.getElementById('editorArea').innerHTML;
+                console.log('保存文档:', currentDocumentName, content);
+                
+                // 显示保存成功提示
+                const saveBtn = document.getElementById('saveBtn');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<span>✅</span><span>已保存</span>';
+                saveBtn.style.background = 'var(--accent-color)';
+                
+                setTimeout(() => {
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.style.background = '';
+                }, 2000);
+            }
+        }
+        
+        // 分享文档
+        function shareDocument() {
+            if (navigator.share) {
+                navigator.share({
+                    title: currentDocumentName,
+                    text: '工程文档分享',
+                    url: window.location.href
+                });
+            } else {
+                // 复制链接到剪贴板
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    alert('链接已复制到剪贴板');
+                });
+            }
+        }
+        
+        // 其他功能
+        function showSettings() {
+            alert('设置功能开发中...');
+        }
+        
+        function showHelp() {
+            alert('帮助文档开发中...');
+        }
+        
+        function showQuickStart() {
+            alert('快速开始向导开发中...');
+        }
+        
+        function startAIChat() {
+            alert('AI对话功能开发中...');
+        }
+        
+        // 发送消息
+        document.getElementById('sendButton').addEventListener('click', function() {
+            const inputField = document.getElementById('inputField');
+            const message = inputField.value.trim();
+            
+            if (message) {
+                console.log('发送消息:', message);
+                inputField.value = '';
+                // 这里可以添加AI对话逻辑
+            }
+        });
+        
+        // 回车发送消息
+        document.getElementById('inputField').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('sendButton').click();
+            }
+        });
+    </script>
+</body>
+</html> 

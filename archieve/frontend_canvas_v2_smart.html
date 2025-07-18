@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工程AI助手 - Canvas智能版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        /* 原有主题变量保持不变 */
+        :root {
+            --primary-color: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --primary-light: #f3f4f6;
+            --secondary-color: #a78bfa;
+            --accent-color: #06b6d4;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+            
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f5f5f5;
+            --bg-hover: #f0f0f0;
+            --bg-active: #e8f0fe;
+            
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-tertiary: #999999;
+            --text-inverse: #ffffff;
+            
+            --border-color: #e0e0e0;
+            --border-light: #f0f0f0;
+            --border-focus: #1a73e8;
+            
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+            
+            --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+            --gradient-secondary: linear-gradient(135deg, #f3f4f6 0%, #faf5ff 100%);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
+        
+        /* 左侧原有侧边栏样式保持不变 */
+        .sidebar {
+            width: 400px;
+            min-width: 350px;
+            background: var(--bg-primary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .sidebar.collapsed {
+            width: 60px;
+            min-width: 60px;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .project-name {
+            font-size: 14px;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .settings-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .new-chat-btn {
+            margin: 16px 20px;
+            padding: 12px 16px;
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .new-chat-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .sidebar-tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .sidebar-tab {
+            flex: 1;
+            padding: 12px 16px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 14px;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .sidebar-tab.active {
+            color: var(--primary-color);
+            background: var(--bg-primary);
+            font-weight: 500;
+        }
+        
+        .sidebar-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 智能文件推荐 */
+        .smart-suggestions {
+            background: linear-gradient(135deg, #e8f0fe 0%, #f3e5f5 100%);
+            border: 1px solid var(--primary-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .suggestion-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .suggestion-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .suggestion-item:hover {
+            background: var(--bg-active);
+            border-color: var(--primary-color);
+        }
+        
+        .suggestion-reason {
+            font-size: 10px;
+            color: var(--text-tertiary);
+            margin-left: auto;
+        }
+        
+        /* 文件项样式增强 */
+        .folder {
+            margin-bottom: 12px;
+        }
+        
+        .folder-title {
+            font-weight: 500;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .folder-title:hover {
+            background: var(--bg-hover);
+        }
+        
+        .folder-icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .file-list {
+            margin-left: 24px;
+            margin-top: 8px;
+        }
+        
+        .file-item {
+            padding: 10px 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.3s;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid transparent;
+            position: relative;
+            margin-bottom: 4px;
+        }
+        
+        .file-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-color: var(--border-color);
+            transform: translateX(4px);
+        }
+        
+        .file-item.ai-recommended {
+            background: linear-gradient(135deg, #fff3cd 0%, #f8f9fa 100%);
+            border-color: var(--warning-color);
+        }
+        
+        .file-item.ai-recommended::before {
+            content: '🤖';
+            position: absolute;
+            left: -12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+        }
+        
+        .file-item.canvas-file {
+            border-left: 3px solid var(--success-color);
+            background: linear-gradient(135deg, #d1fae5 0%, #f0fdf4 100%);
+            color: var(--text-primary);
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .file-item:hover .file-actions {
+            opacity: 1;
+        }
+        
+        .file-action-btn {
+            padding: 2px 8px;
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+        
+        .file-action-btn:hover {
+            background: var(--primary-hover);
+        }
+        
+        .file-action-btn.ai {
+            background: var(--warning-color);
+        }
+        
+        /* AI协作状态指示器 */
+        .ai-status-indicator {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-light);
+        }
+        
+        .ai-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+        
+        /* 智能输入建议 */
+        .input-suggestions {
+            display: none;
+            margin-bottom: 12px;
+        }
+        
+        .input-suggestions.show {
+            display: block;
+        }
+        
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        
+        .suggestion-chip {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 4px 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .suggestion-chip:hover {
+            background: var(--bg-active);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: end;
+            position: relative;
+        }
+        
+        .input-field {
+            flex: 1;
+            min-height: 40px;
+            max-height: 120px;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            resize: none;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        .input-field:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+        
+        .input-field.ai-thinking {
+            border-color: var(--warning-color);
+            background: linear-gradient(135deg, #fff3cd 0%, #ffffff 100%);
+        }
+        
+        .input-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .attach-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .attach-btn:hover {
+            border-color: var(--border-focus);
+            background: var(--bg-active);
+            color: var(--text-primary);
+        }
+        
+        .send-button {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: var(--text-inverse);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .send-button:hover {
+            background: var(--primary-hover);
+            transform: scale(1.05);
+        }
+        
+        .send-button.ai-processing {
+            background: var(--warning-color);
+            animation: rotate 1s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 右侧Canvas区域 */
+        .canvas-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-secondary);
+            position: relative;
+        }
+        
+        .canvas-header {
+            height: 60px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            justify-content: space-between;
+        }
+        
+        .canvas-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .canvas-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            padding: 4px 8px;
+            border-radius: 12px;
+            position: relative;
+        }
+        
+        .canvas-status.ai-active {
+            background: linear-gradient(135deg, #fff3cd 0%, #fef3c7 100%);
+            color: var(--warning-color);
+            animation: glow 2s infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
+            50% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
+        }
+        
+        .canvas-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .canvas-btn {
+            padding: 8px 12px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .canvas-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .canvas-btn.primary {
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+        }
+        
+        .canvas-btn.ai-suggested {
+            border-color: var(--warning-color);
+            color: var(--warning-color);
+            animation: suggest-pulse 3s infinite;
+        }
+        
+        @keyframes suggest-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        .canvas-content {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* AI实时协作覆盖层 */
+        .ai-collaboration-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(2px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .ai-collaboration-overlay.show {
+            display: flex;
+        }
+        
+        .ai-collaboration-card {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            max-width: 400px;
+            border: 2px solid var(--primary-color);
+        }
+        
+        .ai-avatar {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 16px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .ai-message {
+            font-size: 16px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .ai-action {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        .ai-progress {
+            height: 4px;
+            background: var(--bg-secondary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .ai-progress-bar {
+            height: 100%;
+            background: var(--gradient-primary);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 2px;
+        }
+        
+        /* Canvas工作区样式 */
+        .canvas-workspace {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            display: none;
+        }
+        
+        .canvas-workspace.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 智能欢迎屏幕 */
+        .canvas-welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            background: var(--bg-primary);
+            position: relative;
+        }
+        
+        .welcome-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+        
+        .welcome-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+        
+        .welcome-subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+        
+        .smart-recommendations {
+            max-width: 600px;
+            width: 100%;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .recommendations-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--primary-color);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .recommendation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        
+        .recommendation-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .recommendation-item:hover {
+            background: var(--bg-active);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .recommendation-icon {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+        
+        .recommendation-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .recommendation-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .welcome-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .welcome-action {
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .welcome-action:hover {
+            background: var(--bg-active);
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+        
+        /* 增强的PDF查看器 */
+        .pdf-viewer {
+            background: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .pdf-toolbar {
+            height: 50px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 16px;
+        }
+        
+        .pdf-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .pdf-btn {
+            padding: 6px 12px;
+            background: none;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .pdf-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .ai-analysis-btn {
+            background: var(--gradient-primary);
+            color: var(--text-inverse);
+            border: none;
+            margin-left: auto;
+        }
+        
+        .pdf-content {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .pdf-page {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            min-height: 600px;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px;
+            position: relative;
+        }
+        
+        .ai-annotations {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: var(--shadow-md);
+            max-width: 200px;
+            display: none;
+        }
+        
+        .ai-annotations.show {
+            display: block;
+        }
+        
+        .annotation-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        .annotation-item {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            padding: 4px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+        }
+        
+        /* 增强的文档编辑器 */
+        .document-editor {
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            border-right: 1px solid var(--border-color);
+            padding-right: 16px;
+        }
+        
+        .toolbar-group:last-child {
+            border-right: none;
+            padding-right: 0;
+        }
+        
+        .toolbar-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        
+        .toolbar-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        
+        .toolbar-btn.active {
+            background: var(--primary-color);
+            color: var(--text-inverse);
+        }
+        
+        .ai-toolbar-group {
+            background: linear-gradient(135deg, #fff3cd 0%, #fef3c7 100%);
+            border-radius: 6px;
+            padding: 4px;
+            border: 1px solid var(--warning-color);
+        }
+        
+        .ai-suggest-btn {
+            background: var(--warning-color);
+            color: var(--text-inverse);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .ai-suggest-btn:hover {
+            background: #d97706;
+        }
+        
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            background: white;
+            position: relative;
+        }
+        
+        .editor-area {
+            min-height: 100%;
+            padding: 40px 60px;
+            outline: none;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .editor-area h1, .editor-area h2, .editor-area h3 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        
+        .editor-area h1 {
+            font-size: 28px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+        
+        .editor-area h2 {
+            font-size: 22px;
+        }
+        
+        .editor-area h3 {
+            font-size: 18px;
+        }
+        
+        .editor-area p {
+            margin-bottom: 16px;
+        }
+        
+        .editor-area ul, .editor-area ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+        
+        .editor-area li {
+            margin-bottom: 4px;
+        }
+        
+        .ai-suggestion-bubble {
+            position: absolute;
+            background: var(--bg-primary);
+            border: 2px solid var(--warning-color);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: var(--shadow-lg);
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .ai-suggestion-bubble.show {
+            display: block;
+        }
+        
+        .suggestion-text {
+            font-size: 13px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .suggestion-actions {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .suggestion-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .suggestion-btn.accept {
+            background: var(--success-color);
+            color: var(--text-inverse);
+        }
+        
+        .suggestion-btn.reject {
+            background: var(--border-color);
+            color: var(--text-secondary);
+        }
+        
+        /* 侧边栏收缩时的样式 */
+        .sidebar.collapsed .logo,
+        .sidebar.collapsed .project-name,
+        .sidebar.collapsed .new-chat-btn span:last-child,
+        .sidebar.collapsed .sidebar-tab,
+        .sidebar.collapsed .tab-content,
+        .sidebar.collapsed .ai-status-indicator {
+            display: none;
+        }
+        
+        .sidebar.collapsed .new-chat-btn {
+            margin: 16px 8px;
+            padding: 12px;
+            justify-content: center;
+        }
+        
+        .sidebar.collapsed .settings-btn {
+            position: static;
+            margin: 8px auto;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                z-index: 1000;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .canvas-section {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧侧边栏 - 保持原有功能 -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">🏗️ 工程AI助手</div>
+                <div class="project-name">📁 某市政工程项目</div>
+                <button class="settings-btn" onclick="openSettings()">⚙️</button>
+            </div>
+            
+            <button class="new-chat-btn" onclick="startNewChat()">
+                <span>💬</span>
+                <span>新建对话</span>
+            </button>
+            
+            <div class="ai-status-indicator">
+                <div class="ai-status-dot"></div>
+                <span>AI智能助手在线</span>
+            </div>
+            
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" onclick="switchTab('files')">
+                    <span>📁 文件</span>
+                </button>
+                <button class="sidebar-tab" onclick="switchTab('history')">
+                    <span>💬 对话</span>
+                </button>
+            </div>
+            
+            <div class="tab-content active" id="filesTab">
+                <!-- AI智能推荐 -->
+                <div class="smart-suggestions" id="smartSuggestions">
+                    <div class="suggestion-title">
+                        <span>🤖</span>
+                        <span>AI智能推荐</span>
+                    </div>
+                    <div class="suggestion-item" onclick="openInCanvas('pdf', '建筑平面图.pdf')">
+                        <span>📄</span>
+                        <span>建筑平面图.pdf</span>
+                        <span class="suggestion-reason">相关性高</span>
+                    </div>
+                    <div class="suggestion-item" onclick="openInCanvas('editor', '施工方案.docx')">
+                        <span>📝</span>
+                        <span>施工方案.docx</span>
+                        <span class="suggestion-reason">待完善</span>
+                    </div>
+                </div>
+                
+                <div class="folder">
+                    <div class="folder-title">
+                        <span class="folder-icon">📁</span>
+                        施工图纸
+                    </div>
+                    <div class="file-list">
+                        <div class="file-item ai-recommended" onclick="openInCanvas('pdf', '建筑平面图.pdf')">
+                            📄 建筑平面图.pdf
+                            <div class="file-actions">
+                                <button class="file-action-btn">打开</button>
+                                <button class="file-action-btn ai">AI分析</button>
+                            </div>
+                        </div>
+                        <div class="file-item" onclick="openInCanvas('pdf', '结构施工图.pdf')">
+                            📄 结构施工图.pdf
+                            <div class="file-actions">
+                                <button class="file-action-btn">打开</button>
+                                <button class="file-action-btn ai">AI分析</button>
+                            </div>
+                        </div>
+                        <div class="file-item" onclick="openInCanvas('pdf', '电气系统图.pdf')">
+                            📄 电气系统图.pdf
+                            <div class="file-actions">
+                                <button class="file-action-btn">打开</button>
+                                <button class="file-action-btn ai">AI分析</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="folder">
+                    <div class="folder-title">
+                        <span class="folder-icon">📁</span>
+                        生成文档
+                    </div>
+                    <div class="file-list">
+                        <div class="file-item ai-recommended" onclick="openInCanvas('editor', '施工方案.docx')">
+                            📄 施工方案.docx
+                            <div class="file-actions">
+                                <button class="file-action-btn">编辑</button>
+                                <button class="file-action-btn ai">AI完善</button>
+                            </div>
+                        </div>
+                        <div class="file-item" onclick="openInCanvas('editor', '质量检查报告.docx')">
+                            📄 质量检查报告.docx
+                            <div class="file-actions">
+                                <button class="file-action-btn">编辑</button>
+                                <button class="file-action-btn ai">AI完善</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="folder">
+                    <div class="folder-title" onclick="createNewDocument()">
+                        <span class="folder-icon">➕</span>
+                        新建文档
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-content" id="historyTab">
+                <div style="color: var(--text-secondary); text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">💬</div>
+                    <div style="font-size: 16px; margin-bottom: 8px;">对话历史</div>
+                    <div style="font-size: 14px;">点击"新建对话"开始</div>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <!-- 智能输入建议 -->
+                <div class="input-suggestions" id="inputSuggestions">
+                    <div class="suggestion-chips">
+                        <div class="suggestion-chip" onclick="useInputSuggestion('分析当前图纸的结构要点')">分析图纸结构</div>
+                        <div class="suggestion-chip" onclick="useInputSuggestion('帮我完善施工方案')">完善方案</div>
+                        <div class="suggestion-chip" onclick="useInputSuggestion('生成质量检查清单')">质量检查</div>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <textarea class="input-field" id="inputField" placeholder="智能AI助手等待您的指令..." rows="1"></textarea>
+                    <div class="input-actions">
+                        <button class="attach-btn" id="attachBtn" title="上传文件">📎</button>
+                        <button class="send-button" id="sendButton">
+                            <span>▶</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧Canvas区域 -->
+        <div class="canvas-section">
+            <div class="canvas-header">
+                <div class="canvas-title">
+                    <span id="canvasIcon">🤖</span>
+                    <span id="canvasTitleText">AI协作画布</span>
+                    <span class="canvas-status" id="canvasStatus">就绪</span>
+                </div>
+                <div class="canvas-actions">
+                    <button class="canvas-btn ai-suggested" onclick="showAIRecommendations()">
+                        <span>🤖</span>
+                        <span>AI建议</span>
+                    </button>
+                    <button class="canvas-btn" onclick="toggleSidebar()">
+                        <span>📁</span>
+                        <span>文件</span>
+                    </button>
+                    <button class="canvas-btn" onclick="clearCanvas()">
+                        <span>🗑️</span>
+                        <span>清空</span>
+                    </button>
+                    <button class="canvas-btn primary" onclick="saveCanvas()">
+                        <span>💾</span>
+                        <span>保存</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="canvas-content">
+                <!-- AI实时协作覆盖层 -->
+                <div class="ai-collaboration-overlay" id="aiCollaborationOverlay">
+                    <div class="ai-collaboration-card">
+                        <div class="ai-avatar">🤖</div>
+                        <div class="ai-message" id="aiMessage">AI正在分析您的请求...</div>
+                        <div class="ai-action" id="aiAction">准备Canvas操作</div>
+                        <div class="ai-progress">
+                            <div class="ai-progress-bar" id="aiProgressBar"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 智能欢迎屏幕 -->
+                <div class="canvas-workspace active" id="welcomeWorkspace">
+                    <div class="canvas-welcome">
+                        <div class="welcome-icon">🤖</div>
+                        <div class="welcome-title">AI智能协作画布</div>
+                        <div class="welcome-subtitle">
+                            AI助手会根据您的对话智能操作画布<br>
+                            实时协作，让工作更高效
+                        </div>
+                        
+                        <div class="smart-recommendations">
+                            <div class="recommendations-title">
+                                <span>🎯</span>
+                                <span>基于项目的智能推荐</span>
+                            </div>
+                            <div class="recommendation-grid">
+                                <div class="recommendation-item" onclick="startSmartWorkflow('analyze-drawings')">
+                                    <div class="recommendation-icon">📊</div>
+                                    <div class="recommendation-title">图纸分析</div>
+                                    <div class="recommendation-desc">AI分析建筑图纸关键信息</div>
+                                </div>
+                                <div class="recommendation-item" onclick="startSmartWorkflow('generate-plan')">
+                                    <div class="recommendation-icon">📝</div>
+                                    <div class="recommendation-title">方案生成</div>
+                                    <div class="recommendation-desc">基于项目生成施工方案</div>
+                                </div>
+                                <div class="recommendation-item" onclick="startSmartWorkflow('quality-check')">
+                                    <div class="recommendation-icon">✅</div>
+                                    <div class="recommendation-title">质量检查</div>
+                                    <div class="recommendation-desc">创建质量检查清单</div>
+                                </div>
+                                <div class="recommendation-item" onclick="startSmartWorkflow('risk-assessment')">
+                                    <div class="recommendation-icon">⚠️</div>
+                                    <div class="recommendation-title">风险评估</div>
+                                    <div class="recommendation-desc">项目风险分析报告</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="welcome-actions">
+                            <div class="welcome-action" onclick="openInCanvas('pdf', '建筑平面图.pdf')">
+                                <span>📄</span>
+                                <span>查看图纸</span>
+                            </div>
+                            <div class="welcome-action" onclick="createNewDocument()">
+                                <span>📝</span>
+                                <span>新建文档</span>
+                            </div>
+                            <div class="welcome-action" onclick="startAICollaboration()">
+                                <span>🤖</span>
+                                <span>AI协作</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 增强的PDF查看器工作区 -->
+                <div class="canvas-workspace" id="pdfWorkspace">
+                    <div class="pdf-viewer">
+                        <div class="pdf-toolbar">
+                            <div class="pdf-nav">
+                                <button class="pdf-btn" onclick="previousPage()">◀ 上一页</button>
+                                <span>第 <span id="currentPage">1</span> 页，共 <span id="totalPages">10</span> 页</span>
+                                <button class="pdf-btn" onclick="nextPage()">下一页 ▶</button>
+                            </div>
+                            <div class="pdf-nav">
+                                <button class="pdf-btn" onclick="zoomOut()">🔍-</button>
+                                <button class="pdf-btn" onclick="zoomIn()">🔍+</button>
+                                <button class="pdf-btn" onclick="fitToWidth()">📐 适合宽度</button>
+                            </div>
+                            <button class="pdf-btn ai-analysis-btn" onclick="startAIPDFAnalysis()">🤖 AI分析</button>
+                        </div>
+                        <div class="pdf-content">
+                            <div class="pdf-page" id="pdfPage">
+                                <div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-color);">📄</div>
+                                <div style="font-size: 18px; margin-bottom: 8px;" id="pdfFileName">PDF文档</div>
+                                <div style="font-size: 14px; color: var(--text-secondary);">文档内容将在这里显示</div>
+                            </div>
+                            
+                            <!-- AI注释面板 -->
+                            <div class="ai-annotations" id="aiAnnotations">
+                                <div class="annotation-title">🤖 AI分析</div>
+                                <div class="annotation-item">发现3个结构要点</div>
+                                <div class="annotation-item">材料规格已标注</div>
+                                <div class="annotation-item">尺寸信息完整</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 增强的文档编辑器工作区 -->
+                <div class="canvas-workspace" id="editorWorkspace">
+                    <div class="document-editor">
+                        <div class="editor-toolbar">
+                            <div class="toolbar-group">
+                                <button class="toolbar-btn" onclick="formatText('bold')" title="粗体"><b>B</b></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')" title="斜体"><i>I</i></button>
+                                <button class="toolbar-btn" onclick="formatText('underline')" title="下划线"><u>U</u></button>
+                            </div>
+                            <div class="toolbar-group">
+                                <button class="toolbar-btn" onclick="formatText('insertUnorderedList')" title="项目符号">• </button>
+                                <button class="toolbar-btn" onclick="formatText('insertOrderedList')" title="编号">1.</button>
+                            </div>
+                            <div class="toolbar-group">
+                                <button class="toolbar-btn" onclick="formatText('justifyLeft')" title="左对齐">⬅</button>
+                                <button class="toolbar-btn" onclick="formatText('justifyCenter')" title="居中">↔</button>
+                                <button class="toolbar-btn" onclick="formatText('justifyRight')" title="右对齐">➡</button>
+                            </div>
+                            <div class="toolbar-group ai-toolbar-group">
+                                <button class="ai-suggest-btn" onclick="showAISuggestions()">🤖 AI建议</button>
+                                <button class="ai-suggest-btn" onclick="askAIForHelp()">💡 AI协助</button>
+                            </div>
+                        </div>
+                        
+                        <div class="editor-content">
+                            <div class="editor-area" contenteditable="true" id="editorArea">
+                                <h1>欢迎使用AI智能协作编辑器</h1>
+                                <p>在这里，AI不仅是助手，更是您的协作伙伴：</p>
+                                <ul>
+                                    <li>💡 AI会实时分析您的内容并提供改进建议</li>
+                                    <li>🎯 基于项目背景智能推荐相关内容</li>
+                                    <li>⚡ 与AI对话即可直接编辑文档</li>
+                                    <li>🔄 AI可以实时完善和优化您的工作</li>
+                                </ul>
+                                <p>试试在左侧对话框中说："帮我完善这个文档的结构"</p>
+                            </div>
+                            
+                            <!-- AI建议气泡 -->
+                            <div class="ai-suggestion-bubble" id="aiSuggestionBubble">
+                                <div class="suggestion-text">建议添加安全注意事项部分，提高文档完整性</div>
+                                <div class="suggestion-actions">
+                                    <button class="suggestion-btn accept" onclick="acceptAISuggestion()">采纳</button>
+                                    <button class="suggestion-btn reject" onclick="rejectAISuggestion()">忽略</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentWorkspace = 'welcome';
+        let currentFile = null;
+        let aiActive = false;
+        let suggestionsEnabled = true;
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSmartFeatures();
+            showInputSuggestions();
+            
+            // 模拟AI智能推荐
+            setTimeout(() => {
+                updateSmartSuggestions();
+            }, 3000);
+        });
+        
+        // 初始化智能功能
+        function initializeSmartFeatures() {
+            // 模拟AI分析用户行为
+            setInterval(() => {
+                if (Math.random() > 0.7 && currentWorkspace === 'editor') {
+                    showRandomAISuggestion();
+                }
+            }, 30000); // 每30秒可能显示AI建议
+            
+            // 智能输入监听
+            const inputField = document.getElementById('inputField');
+            inputField.addEventListener('input', handleSmartInput);
+        }
+        
+        // 切换标签页
+        function switchTab(tabName) {
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            if (tabName === 'files') {
+                document.getElementById('filesTab').classList.add('active');
+            } else if (tabName === 'history') {
+                document.getElementById('historyTab').classList.add('active');
+            }
+        }
+        
+        // 智能输入处理
+        function handleSmartInput(e) {
+            const value = e.target.value.toLowerCase();
+            
+            // 根据输入内容显示不同的建议
+            if (value.includes('图纸') || value.includes('分析')) {
+                showSmartInputSuggestions(['分析建筑平面图的关键信息', '检查图纸中的结构要点', '提取图纸尺寸数据']);
+            } else if (value.includes('文档') || value.includes('生成')) {
+                showSmartInputSuggestions(['生成施工方案大纲', '创建质量检查清单', '编写安全管理制度']);
+            } else if (value.includes('完善') || value.includes('优化')) {
+                showSmartInputSuggestions(['完善当前文档结构', '优化内容表达', '添加专业术语说明']);
+            } else if (value.length === 0) {
+                showInputSuggestions();
+            }
+        }
+        
+        // 显示智能输入建议
+        function showSmartInputSuggestions(suggestions) {
+            const container = document.getElementById('inputSuggestions');
+            const chipsContainer = container.querySelector('.suggestion-chips');
+            
+            chipsContainer.innerHTML = suggestions.map(suggestion => 
+                `<div class="suggestion-chip" onclick="useInputSuggestion('${suggestion}')">${suggestion}</div>`
+            ).join('');
+            
+            container.classList.add('show');
+        }
+        
+        // 显示默认输入建议
+        function showInputSuggestions() {
+            const container = document.getElementById('inputSuggestions');
+            container.classList.add('show');
+        }
+        
+        // 使用输入建议
+        function useInputSuggestion(suggestion) {
+            document.getElementById('inputField').value = suggestion;
+            document.getElementById('inputSuggestions').classList.remove('show');
+            document.getElementById('inputField').focus();
+        }
+        
+        // 更新智能推荐
+        function updateSmartSuggestions() {
+            const suggestions = [
+                { file: '建筑平面图.pdf', type: 'pdf', reason: '最近修改' },
+                { file: '施工方案.docx', type: 'editor', reason: '待完善' },
+                { file: '质量检查报告.docx', type: 'editor', reason: '相关性高' }
+            ];
+            
+            const container = document.getElementById('smartSuggestions');
+            const existingItems = container.querySelectorAll('.suggestion-item');
+            
+            // 随机更新一个推荐项
+            if (existingItems.length > 0) {
+                const randomIndex = Math.floor(Math.random() * existingItems.length);
+                const newSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+                
+                existingItems[randomIndex].innerHTML = `
+                    <span>${newSuggestion.type === 'pdf' ? '📄' : '📝'}</span>
+                    <span>${newSuggestion.file}</span>
+                    <span class="suggestion-reason">${newSuggestion.reason}</span>
+                `;
+                existingItems[randomIndex].onclick = () => openInCanvas(newSuggestion.type, newSuggestion.file);
+            }
+        }
+        
+        // 在Canvas中打开文件
+        function openInCanvas(type, filename) {
+            currentFile = { type, filename };
+            
+            // 高亮当前文件
+            document.querySelectorAll('.file-item').forEach(item => {
+                item.classList.remove('canvas-file');
+            });
+            
+            // 找到对应文件项并高亮
+            const fileItems = document.querySelectorAll('.file-item');
+            fileItems.forEach(item => {
+                if (item.textContent.includes(filename)) {
+                    item.classList.add('canvas-file');
+                }
+            });
+            
+            if (type === 'pdf') {
+                showSmartPDFViewer(filename);
+            } else if (type === 'editor') {
+                showSmartDocumentEditor(filename);
+            }
+            
+            // 更新Canvas状态
+            updateCanvasStatus(`AI正在${type === 'pdf' ? '分析' : '协作编辑'}: ${filename}`, true);
+        }
+        
+        // 显示智能PDF查看器
+        function showSmartPDFViewer(filename) {
+            switchWorkspace('pdf');
+            document.getElementById('canvasIcon').textContent = '📄';
+            document.getElementById('canvasTitleText').textContent = filename;
+            document.getElementById('pdfFileName').textContent = filename;
+            
+            // 显示AI协作过程
+            showAICollaboration('正在加载PDF...', '分析文档结构', 30);
+            
+            setTimeout(() => {
+                const pdfPage = document.getElementById('pdfPage');
+                pdfPage.innerHTML = `
+                    <div style="width: 100%; height: 500px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border: 2px dashed #dee2e6; display: flex; align-items: center; justify-content: center; flex-direction: column; border-radius: 8px;">
+                        <div style="font-size: 48px; margin-bottom: 16px; color: var(--primary-color);">📄</div>
+                        <div style="font-size: 18px; font-weight: 500; margin-bottom: 8px;">${filename}</div>
+                        <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">PDF内容预览区域</div>
+                        <div style="background: var(--bg-primary); padding: 12px 20px; border-radius: 6px; border: 1px solid var(--border-color);">
+                            <div style="font-size: 12px; color: var(--text-tertiary);">🤖 AI已完成初步分析</div>
+                        </div>
+                    </div>
+                `;
+                
+                hideAICollaboration();
+                
+                // 显示AI分析结果
+                setTimeout(() => {
+                    document.getElementById('aiAnnotations').classList.add('show');
+                }, 1000);
+                
+            }, 2000);
+        }
+        
+        // 显示智能文档编辑器
+        function showSmartDocumentEditor(filename) {
+            switchWorkspace('editor');
+            document.getElementById('canvasIcon').textContent = '📝';
+            document.getElementById('canvasTitleText').textContent = filename;
+            
+            // 显示AI协作过程
+            showAICollaboration('正在准备编辑器...', '加载文档模板', 50);
+            
+            setTimeout(() => {
+                // 加载文档模板
+                const templates = {
+                    '施工方案.docx': `
+                        <h1>施工方案</h1>
+                        <div style="background: linear-gradient(135deg, #fff3cd 0%, #fef3c7 100%); border-left: 4px solid var(--warning-color); padding: 12px; margin: 16px 0; border-radius: 4px;">
+                            <div style="font-size: 13px; color: var(--warning-color); font-weight: 500;">🤖 AI智能建议</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">基于项目特点，建议添加以下章节：工程概况、施工准备、施工工艺、质量控制、安全措施</div>
+                        </div>
+                        <h2>1. 工程概况</h2>
+                        <p>本工程为某市政道路改造项目，主要包括道路拓宽、桥梁加固和配套设施建设。</p>
+                        
+                        <h2>2. 施工准备</h2>
+                        <h3>2.1 材料准备</h3>
+                        <ul>
+                            <li>水泥：采用42.5级普通硅酸盐水泥</li>
+                            <li>钢筋：HRB400级钢筋</li>
+                            <li>混凝土：C30商品混凝土</li>
+                        </ul>
+                        
+                        <div style="background: #e8f0fe; border: 1px dashed var(--primary-color); padding: 12px; margin: 16px 0; border-radius: 4px;">
+                            <div style="font-size: 13px; color: var(--primary-color); font-weight: 500;">💡 AI协作提示</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">说"添加施工工艺详细步骤"让AI帮您扩展内容</div>
+                        </div>
+                    `,
+                    '质量检查报告.docx': `
+                        <h1>质量检查报告</h1>
+                        <p><strong>检查日期：</strong> ${new Date().toLocaleDateString()}</p>
+                        <p><strong>检查人员：</strong> 工程师团队</p>
+                        
+                        <div style="background: linear-gradient(135deg, #d1fae5 0%, #f0fdf4 100%); border-left: 4px solid var(--success-color); padding: 12px; margin: 16px 0; border-radius: 4px;">
+                            <div style="font-size: 13px; color: var(--success-color); font-weight: 500;">✅ AI智能检测</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">已自动分析相关规范要求，建议按GB50300-2013标准进行检查</div>
+                        </div>
+                        
+                        <h2>检查项目</h2>
+                        <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                            <tr style="background: #f5f5f5;">
+                                <th style="border: 1px solid #ddd; padding: 8px;">检查项目</th>
+                                <th style="border: 1px solid #ddd; padding: 8px;">标准要求</th>
+                                <th style="border: 1px solid #ddd; padding: 8px;">实际情况</th>
+                                <th style="border: 1px solid #ddd; padding: 8px;">结果</th>
+                            </tr>
+                            <tr>
+                                <td style="border: 1px solid #ddd; padding: 8px;">混凝土强度</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">≥C30</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">C32</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">✅ 合格</td>
+                            </tr>
+                        </table>
+                        
+                        <div style="background: #e8f0fe; border: 1px dashed var(--primary-color); padding: 12px; margin: 16px 0; border-radius: 4px;">
+                            <div style="font-size: 13px; color: var(--primary-color); font-weight: 500;">🤖 AI可以协助</div>
+                            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">说"添加更多检查项目"让AI扩展表格内容</div>
+                        </div>
+                    `
+                };
+                
+                const content = templates[filename] || `
+                    <h1>${filename.replace('.docx', '')}</h1>
+                    <p>开始编写您的工程文档...</p>
+                    <div style="background: #e8f0fe; border-left: 4px solid var(--primary-color); padding: 12px; margin: 16px 0; border-radius: 4px;">
+                        <div style="font-size: 13px; color: var(--primary-color); font-weight: 500;">🤖 AI就绪</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">在左侧对话中告诉AI您需要什么内容，AI会直接帮您编辑</div>
+                    </div>
+                `;
+                
+                document.getElementById('editorArea').innerHTML = content;
+                hideAICollaboration();
+                
+                // 随机显示AI建议
+                setTimeout(() => {
+                    if (Math.random() > 0.5) {
+                        showAISuggestionBubble();
+                    }
+                }, 3000);
+                
+            }, 2000);
+        }
+        
+        // 显示AI协作过程
+        function showAICollaboration(message, action, progress) {
+            aiActive = true;
+            const overlay = document.getElementById('aiCollaborationOverlay');
+            const messageEl = document.getElementById('aiMessage');
+            const actionEl = document.getElementById('aiAction');
+            const progressBar = document.getElementById('aiProgressBar');
+            
+            messageEl.textContent = message;
+            actionEl.textContent = action;
+            progressBar.style.width = progress + '%';
+            
+            overlay.classList.add('show');
+            
+            // 更新Canvas状态
+            document.getElementById('canvasStatus').classList.add('ai-active');
+        }
+        
+        // 隐藏AI协作过程
+        function hideAICollaboration() {
+            aiActive = false;
+            const overlay = document.getElementById('aiCollaborationOverlay');
+            overlay.classList.remove('show');
+            
+            document.getElementById('canvasStatus').classList.remove('ai-active');
+        }
+        
+        // 显示AI建议气泡
+        function showAISuggestionBubble() {
+            const bubble = document.getElementById('aiSuggestionBubble');
+            bubble.style.top = '100px';
+            bubble.style.right = '60px';
+            bubble.classList.add('show');
+            
+            // 5秒后自动隐藏
+            setTimeout(() => {
+                bubble.classList.remove('show');
+            }, 8000);
+        }
+        
+        // 显示随机AI建议
+        function showRandomAISuggestion() {
+            const suggestions = [
+                '建议添加风险评估章节，提高方案完整性',
+                '检测到可以优化的表格格式，需要改进吗？',
+                '根据行业标准，建议补充安全措施说明',
+                '发现内容可以更加详细，需要AI帮助扩展吗？'
+            ];
+            
+            const randomSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+            const bubble = document.getElementById('aiSuggestionBubble');
+            bubble.querySelector('.suggestion-text').textContent = randomSuggestion;
+            
+            showAISuggestionBubble();
+        }
+        
+        // 接受AI建议
+        function acceptAISuggestion() {
+            const bubble = document.getElementById('aiSuggestionBubble');
+            const suggestion = bubble.querySelector('.suggestion-text').textContent;
+            
+            // 模拟AI实施建议
+            showAICollaboration('AI正在实施建议...', '优化文档内容', 70);
+            
+            setTimeout(() => {
+                // 添加AI生成的内容
+                const editorArea = document.getElementById('editorArea');
+                const newContent = `
+                    <h2>3. 风险评估与防控措施</h2>
+                    <div style="background: linear-gradient(135deg, #d1fae5 0%, #f0fdf4 100%); border-left: 4px solid var(--success-color); padding: 12px; margin: 16px 0; border-radius: 4px;">
+                        <div style="font-size: 13px; color: var(--success-color); font-weight: 500;">🤖 AI已添加内容</div>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">根据项目特点自动生成风险评估内容</div>
+                    </div>
+                    <h3>3.1 主要风险识别</h3>
+                    <ul>
+                        <li>施工安全风险：高空作业、机械操作安全</li>
+                        <li>质量风险：材料质量、施工工艺控制</li>
+                        <li>进度风险：天气因素、资源配置</li>
+                    </ul>
+                    <h3>3.2 防控措施</h3>
+                    <ol>
+                        <li>建立完善的安全管理体系</li>
+                        <li>严格材料进场检验制度</li>
+                        <li>制定应急预案和处置程序</li>
+                    </ol>
+                `;
+                
+                editorArea.innerHTML += newContent;
+                hideAICollaboration();
+                updateCanvasStatus('AI已完善文档内容', true);
+                
+            }, 2000);
+            
+            bubble.classList.remove('show');
+        }
+        
+        // 拒绝AI建议
+        function rejectAISuggestion() {
+            document.getElementById('aiSuggestionBubble').classList.remove('show');
+        }
+        
+        // 切换工作区
+        function switchWorkspace(workspace) {
+            document.querySelectorAll('.canvas-workspace').forEach(w => {
+                w.classList.remove('active');
+            });
+            
+            if (workspace === 'welcome') {
+                document.getElementById('welcomeWorkspace').classList.add('active');
+                document.getElementById('canvasIcon').textContent = '🤖';
+                document.getElementById('canvasTitleText').textContent = 'AI协作画布';
+            } else if (workspace === 'pdf') {
+                document.getElementById('pdfWorkspace').classList.add('active');
+            } else if (workspace === 'editor') {
+                document.getElementById('editorWorkspace').classList.add('active');
+            }
+            
+            currentWorkspace = workspace;
+        }
+        
+        // 开始智能工作流
+        function startSmartWorkflow(type) {
+            const workflows = {
+                'analyze-drawings': () => openInCanvas('pdf', '建筑平面图.pdf'),
+                'generate-plan': () => {
+                    showAICollaboration('AI正在生成施工方案...', '分析项目需求', 60);
+                    setTimeout(() => {
+                        openInCanvas('editor', '施工方案.docx');
+                    }, 2000);
+                },
+                'quality-check': () => openInCanvas('editor', '质量检查报告.docx'),
+                'risk-assessment': () => {
+                    createNewDocument();
+                    setTimeout(() => {
+                        const editorArea = document.getElementById('editorArea');
+                        editorArea.innerHTML = `
+                            <h1>项目风险评估报告</h1>
+                            <div style="background: linear-gradient(135deg, #fff3cd 0%, #fef3c7 100%); border-left: 4px solid var(--warning-color); padding: 12px; margin: 16px 0; border-radius: 4px;">
+                                <div style="font-size: 13px; color: var(--warning-color); font-weight: 500;">🤖 AI自动生成</div>
+                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">基于项目信息智能生成风险评估框架</div>
+                            </div>
+                            <p>AI正在为您的项目量身定制风险评估报告...</p>
+                        `;
+                    }, 500);
+                }
+            };
+            
+            if (workflows[type]) {
+                workflows[type]();
+            }
+        }
+        
+        // 开始AI PDF分析
+        function startAIPDFAnalysis() {
+            showAICollaboration('AI正在深度分析图纸...', '提取关键信息', 80);
+            
+            setTimeout(() => {
+                hideAICollaboration();
+                document.getElementById('aiAnnotations').classList.add('show');
+                
+                // 更新注释内容
+                const annotations = document.getElementById('aiAnnotations');
+                annotations.innerHTML = `
+                    <div class="annotation-title">🤖 AI深度分析</div>
+                    <div class="annotation-item">✅ 结构完整性良好</div>
+                    <div class="annotation-item">📏 关键尺寸已提取</div>
+                    <div class="annotation-item">⚠️ 发现2处需要注意的节点</div>
+                    <div class="annotation-item">📋 材料清单已生成</div>
+                `;
+                
+                updateCanvasStatus('AI分析完成', true);
+            }, 3000);
+        }
+        
+        // 其他功能保持不变...
+        function updateCanvasStatus(status, aiActive = false) {
+            document.getElementById('canvasStatus').textContent = status;
+            if (aiActive) {
+                document.getElementById('canvasStatus').classList.add('ai-active');
+            } else {
+                document.getElementById('canvasStatus').classList.remove('ai-active');
+            }
+        }
+        
+        function createNewDocument() {
+            const docName = prompt('请输入新文档名称:') || '新建文档';
+            openInCanvas('editor', docName + '.docx');
+        }
+        
+        function startAICollaboration() {
+            document.getElementById('inputField').value = '你好AI，请帮我开始一个新的工程项目文档。';
+            document.getElementById('inputField').focus();
+            updateCanvasStatus('等待AI响应...', true);
+        }
+        
+        function showAIRecommendations() {
+            alert('AI建议：\n1. 完善施工方案的安全措施部分\n2. 添加质量检查的详细流程\n3. 补充项目风险评估内容');
+        }
+        
+        function askAIForHelp() {
+            document.getElementById('inputField').value = '请AI帮我优化当前正在编辑的文档内容。';
+            document.getElementById('inputField').focus();
+        }
+        
+        function showAISuggestions() {
+            showAISuggestionBubble();
+        }
+        
+        // 工具栏功能
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            document.getElementById('editorArea').focus();
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+        
+        function clearCanvas() {
+            if (confirm('确定要清空当前画布吗？')) {
+                switchWorkspace('welcome');
+                currentFile = null;
+                updateCanvasStatus('就绪');
+                
+                // 清除文件高亮
+                document.querySelectorAll('.file-item').forEach(item => {
+                    item.classList.remove('canvas-file');
+                });
+                
+                // 隐藏AI注释
+                document.getElementById('aiAnnotations').classList.remove('show');
+            }
+        }
+        
+        function saveCanvas() {
+            if (currentWorkspace === 'editor') {
+                const content = document.getElementById('editorArea').innerHTML;
+                console.log('保存文档:', content);
+                
+                showAICollaboration('AI正在优化保存...', '检查内容完整性', 90);
+                
+                setTimeout(() => {
+                    hideAICollaboration();
+                    updateCanvasStatus('已保存并优化', true);
+                    
+                    setTimeout(() => {
+                        updateCanvasStatus(`正在编辑: ${currentFile?.filename || '文档'}`);
+                    }, 3000);
+                }, 1500);
+            } else {
+                alert('当前画布内容已保存');
+            }
+        }
+        
+        // PDF控制功能
+        function previousPage() {
+            const currentPage = document.getElementById('currentPage');
+            const pageNum = parseInt(currentPage.textContent);
+            if (pageNum > 1) {
+                currentPage.textContent = pageNum - 1;
+            }
+        }
+        
+        function nextPage() {
+            const currentPage = document.getElementById('currentPage');
+            const totalPages = document.getElementById('totalPages');
+            const pageNum = parseInt(currentPage.textContent);
+            const total = parseInt(totalPages.textContent);
+            if (pageNum < total) {
+                currentPage.textContent = pageNum + 1;
+            }
+        }
+        
+        function zoomIn() {
+            console.log('放大PDF');
+        }
+        
+        function zoomOut() {
+            console.log('缩小PDF');
+        }
+        
+        function fitToWidth() {
+            console.log('适合宽度');
+        }
+        
+        // 新建对话
+        function startNewChat() {
+            alert('新建对话功能 - 保持原有逻辑');
+        }
+        
+        // 设置
+        function openSettings() {
+            alert('设置功能 - 保持原有逻辑');
+        }
+        
+        // 发送消息 - 增强AI协作功能
+        document.getElementById('sendButton').addEventListener('click', function() {
+            const inputField = document.getElementById('inputField');
+            const message = inputField.value.trim();
+            
+            if (message) {
+                console.log('发送消息:', message);
+                inputField.value = '';
+                inputField.classList.add('ai-thinking');
+                this.classList.add('ai-processing');
+                
+                // 隐藏输入建议
+                document.getElementById('inputSuggestions').classList.remove('show');
+                
+                // 模拟AI智能响应Canvas操作
+                setTimeout(() => {
+                    simulateSmartAICanvasOperation(message);
+                    inputField.classList.remove('ai-thinking');
+                    this.classList.remove('ai-processing');
+                }, 1500);
+            }
+        });
+        
+        // 模拟智能AI Canvas操作
+        function simulateSmartAICanvasOperation(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            if (lowerMessage.includes('建筑平面图') || lowerMessage.includes('图纸') || lowerMessage.includes('分析')) {
+                showAICollaboration('AI正在理解您的需求...', '准备打开图纸', 40);
+                setTimeout(() => {
+                    openInCanvas('pdf', '建筑平面图.pdf');
+                }, 1000);
+            } else if (lowerMessage.includes('施工方案') || lowerMessage.includes('创建') || lowerMessage.includes('新建')) {
+                showAICollaboration('AI正在生成施工方案...', '分析项目需求', 60);
+                setTimeout(() => {
+                    openInCanvas('editor', '施工方案.docx');
+                }, 1500);
+            } else if (lowerMessage.includes('完善') || lowerMessage.includes('优化') || lowerMessage.includes('改进')) {
+                if (currentWorkspace === 'editor') {
+                    showAICollaboration('AI正在分析内容...', '优化文档结构', 70);
+                    setTimeout(() => {
+                        // 模拟AI智能编辑
+                        const editorArea = document.getElementById('editorArea');
+                        const currentContent = editorArea.innerHTML;
+                        
+                        if (currentContent.includes('施工方案')) {
+                            editorArea.innerHTML = currentContent + `
+                                <div style="background: linear-gradient(135deg, #d1fae5 0%, #f0fdf4 100%); border-left: 4px solid var(--success-color); padding: 12px; margin: 16px 0; border-radius: 4px;">
+                                    <div style="font-size: 13px; color: var(--success-color); font-weight: 500;">🤖 AI智能优化</div>
+                                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">根据工程规范自动添加相关内容</div>
+                                </div>
+                                <h2>4. 施工质量控制</h2>
+                                <h3>4.1 质量管理体系</h3>
+                                <p>建立三级质量检查制度：班组自检、工长复检、质检员专检。</p>
+                                <h3>4.2 关键工序控制点</h3>
+                                <ul>
+                                    <li>钢筋绑扎：钢筋规格、间距、保护层厚度</li>
+                                    <li>混凝土浇筑：配比、振捣、养护</li>
+                                    <li>模板安装：平整度、垂直度、支撑稳定性</li>
+                                </ul>
+                            `;
+                        }
+                        
+                        hideAICollaboration();
+                        updateCanvasStatus('AI已智能优化文档内容', true);
+                        
+                        // 显示优化完成的建议气泡
+                        setTimeout(() => {
+                            const bubble = document.getElementById('aiSuggestionBubble');
+                            bubble.querySelector('.suggestion-text').textContent = '文档已优化完成！还需要添加安全管理章节吗？';
+                            showAISuggestionBubble();
+                        }, 1000);
+                        
+                    }, 2000);
+                } else {
+                    openInCanvas('editor', '施工方案.docx');
+                }
+            } else if (lowerMessage.includes('质量') || lowerMessage.includes('检查')) {
+                showAICollaboration('AI正在准备质量检查模板...', '加载规范标准', 55);
+                setTimeout(() => {
+                    openInCanvas('editor', '质量检查报告.docx');
+                }, 1500);
+            } else {
+                // 通用AI响应
+                updateCanvasStatus('AI正在理解您的需求...', true);
+                setTimeout(() => {
+                    updateCanvasStatus('AI已准备就绪', false);
+                    
+                    // 显示智能建议
+                    setTimeout(() => {
+                        showSmartInputSuggestions([
+                            '分析当前项目的技术要点', 
+                            '生成相关的工程文档', 
+                            '查看项目相关图纸'
+                        ]);
+                    }, 1000);
+                }, 2000);
+            }
+        }
+        
+        // 回车发送
+        document.getElementById('inputField').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('sendButton').click();
+            }
+        });
+    </script>
+</body>
+</html> 
